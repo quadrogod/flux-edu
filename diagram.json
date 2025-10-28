@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "author": "Alex Molchanov",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-arduino-uno", "id": "uno", "top": 48.6, "left": -0.6, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": -118.8,
+      "left": 99.8,
+      "attrs": { "color": "red", "flip": "" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": -52.8,
+      "left": 105.05,
+      "rotate": 90,
+      "attrs": { "value": "100000" }
+    },
+    {
+      "type": "wokwi-led-ring",
+      "id": "ring1",
+      "top": -239.36,
+      "left": 135.59,
+      "attrs": { "pixels": "10" }
+    },
+    {
+      "type": "wokwi-led-ring",
+      "id": "ring2",
+      "top": -241.66,
+      "left": 307.24,
+      "attrs": { "pixels": "10" }
+    },
+    {
+      "type": "wokwi-led-ring",
+      "id": "ring3",
+      "top": -126.46,
+      "left": 220.84,
+      "attrs": { "pixels": "10" }
+    },
+    { "type": "wokwi-ir-receiver", "id": "ir1", "top": -58.95, "left": -184.18, "attrs": {} },
+    { "type": "wokwi-ir-remote", "id": "remote1", "top": -67.2, "left": -364.8, "attrs": {} }
+  ],
+  "connections": [
+    [ "led1:A", "r1:1", "green", [ "v0" ] ],
+    [ "led1:C", "uno:GND.1", "green", [ "v0" ] ],
+    [ "ring1:GND", "uno:GND.1", "black", [ "v0" ] ],
+    [ "ring1:VCC", "uno:5V", "red", [ "v0" ] ],
+    [ "ring1:DIN", "uno:5", "green", [ "v0" ] ],
+    [ "ring2:GND", "uno:GND.1", "black", [ "v0" ] ],
+    [ "ring2:VCC", "uno:5V", "red", [ "v0" ] ],
+    [ "ring2:DIN", "uno:5", "green", [ "v0" ] ],
+    [ "ring3:GND", "uno:GND.1", "black", [ "v0" ] ],
+    [ "ring3:VCC", "uno:5V", "red", [ "v0" ] ],
+    [ "ring3:DIN", "uno:5", "green", [ "v0" ] ],
+    [ "ir1:VCC", "uno:5V", "red", [ "v0" ] ],
+    [ "r1:2", "uno:12", "green", [ "h0" ] ],
+    [ "ir1:GND", "uno:GND.2", "black", [ "v0" ] ],
+    [ "ir1:DAT", "uno:3", "green", [ "v0" ] ]
+  ],
+  "dependencies": {}
+}
