@@ -1,5 +1,4 @@
-#ifndef CONFIG_H
-#define CONFIG_H
+#pragma once
 
 /********************************************************************
  *  CONFIGURATION
@@ -26,8 +25,8 @@
 #define BTN_STOP    168
 #define BTN_VOL_UP  2
 #define BTN_VOL_DWN 152
-#define BTN_UP      224  // previous
-#define BTN_DOWN    144  // next
+#define BTN_UP      224
+#define BTN_DOWN    144
 #define BTN_POWER   162
 
 // ----------------- LEDS -----------------
@@ -38,5 +37,3 @@
 
 // ----------------- Misc -----------------
 #define SINGLE_LED_PIN 12
-
-#endif

@@ -4,9 +4,11 @@
 #include "Globals.h"
 #include "IRHandler.h"
 
-/********************************************************************
- *  IR HANDLER
- ********************************************************************/
+void resetModes() {
+    timeTravel = smoothChase = movieChase = movieChaseSimple =
+    thirtyChase = radChase = radChase2 = rainbowChase = false;
+}
+
 void handleIRRemote() {
     if (!IrReceiver.decode()) return;
 
@@ -16,7 +18,6 @@ void handleIRRemote() {
 
     // myDFPlayer.stop(); // generic stop before switching mode
 
-    // Reset all modes
     resetModes();
 
     switch (cmd) {
@@ -48,13 +49,4 @@ void handleIRRemote() {
     }
 
     IrReceiver.resume();
-}
-
-
-/********************************************************************
- *  MODE MANAGEMENT
- ********************************************************************/
-void resetModes() {
-    timeTravel = smoothChase = movieChase = movieChaseSimple =
-    thirtyChase = radChase = radChase2 = rainbowChase = false;
 }

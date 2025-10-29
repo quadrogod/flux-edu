@@ -1,14 +1,10 @@
-#ifndef GLOBALS_H
-#define GLOBALS_H
-
-// #include "Arduino.h"
+#pragma once
 #include "FastLED.h"
 #include "Config.h"
 
 /********************************************************************
  *  GLOBAL VARIABLES
  ********************************************************************/
-
 extern CRGB leds[NUM_LEDS];
 
 extern uint8_t hue;
@@ -25,7 +21,5 @@ extern bool radChase;
 extern bool radChase2;
 extern bool rainbowChase;
 
-// Timers
+// Timer
 extern unsigned long previousTime;
-
-#endif

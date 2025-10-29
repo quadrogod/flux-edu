@@ -1,11 +1,7 @@
-#ifndef IRHANDLER_H
-#define IRHANDLER_H
+#pragma once
 
 /********************************************************************
- *  IR HANDLER PROTOTYPES
+ *  IR HANDLER
  ********************************************************************/
-
 void handleIRRemote();
 void resetModes();
-
-#endif

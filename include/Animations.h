@@ -1,11 +1,13 @@
-#ifndef ANIMATIONS_H
-#define ANIMATIONS_H
+#pragma once
 
 /********************************************************************
- *  ANIMATION PROTOTYPES
+ *  ANIMATION HANDLER
  ********************************************************************/
-
 void handleAnimations();
+
+/********************************************************************
+ *  ANIMATION FUNCTIONS
+ ********************************************************************/
 void runSmoothChase();
 void runMovieChase();
 void runMovieChaseSimple();
@@ -14,5 +16,3 @@ void runRadChase();
 void runRadChase2();
 void runRainbowChase();
 void runTimeTravel();
-
-#endif
