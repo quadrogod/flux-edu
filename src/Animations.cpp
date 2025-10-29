@@ -1,4 +1,4 @@
-#include "FastLED.h"
+#include <FastLED.h>
 #include "Config.h"
 #include "Globals.h"
 #include "Animations.h"

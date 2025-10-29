@@ -1,8 +1,12 @@
-#include "FastLED.h"
-#include "IRremote.hpp"
+#include <FastLED.h>
+#include <IRremote.hpp>
 #include "Config.h"
 #include "Globals.h"
 #include "IRHandler.h"
+
+void initIR() {
+    IrReceiver.begin(IR_RECEIVE_PIN);
+}
 
 void resetModes() {
     timeTravel = smoothChase = movieChase = movieChaseSimple =
@@ -46,6 +50,8 @@ void handleIRRemote() {
         case BTN_9:
             // myDFPlayer.playMp3Folder(6);
             break;
+
+        default: break;
     }
 
     IrReceiver.resume();

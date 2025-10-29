@@ -1,8 +1,8 @@
-#include "Arduino.h"
-#include "FastLED.h"
-#include "IRremote.hpp"
-// #include "SoftwareSerial.h"
-// #include "DFRobotDFPlayerMini.h"
+#include <Arduino.h>
+#include <FastLED.h>
+// #include <IRremote.hpp>
+// #include <SoftwareSerial.h>
+// #include <DFRobotDFPlayerMini.h>
 
 #include "Config.h"
 #include "Globals.h"
@@ -26,7 +26,7 @@ void setup() {
     // delay(600);
 
     // ---------------- IR Receiver ----------------
-    IrReceiver.begin(IR_RECEIVE_PIN);
+    initIR();
     Serial.println(F("IR Receiver Ready."));
 
     // ---------------- LED Setup ----------------
