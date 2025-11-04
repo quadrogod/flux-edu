@@ -3,62 +3,79 @@
   "author": "Alex Molchanov",
   "editor": "wokwi",
   "parts": [
-    { "type": "wokwi-arduino-uno", "id": "uno", "top": 48.6, "left": -0.6, "attrs": {} },
+    { "type": "wokwi-arduino-mega", "id": "mega", "top": 96.6, "left": -195.6, "attrs": {} },
     {
       "type": "wokwi-led",
       "id": "led1",
       "top": -118.8,
-      "left": 99.8,
+      "left": 13.4,
       "attrs": { "color": "red", "flip": "" }
     },
     {
       "type": "wokwi-resistor",
       "id": "r1",
-      "top": -52.8,
-      "left": 105.05,
+      "top": -33.6,
+      "left": 37.85,
       "rotate": 90,
       "attrs": { "value": "100000" }
     },
     {
       "type": "wokwi-led-ring",
       "id": "ring1",
-      "top": -239.36,
-      "left": 135.59,
+      "top": -241.66,
+      "left": 115.24,
       "attrs": { "pixels": "10" }
     },
     {
       "type": "wokwi-led-ring",
       "id": "ring2",
       "top": -241.66,
-      "left": 307.24,
+      "left": 316.84,
       "attrs": { "pixels": "10" }
     },
     {
       "type": "wokwi-led-ring",
       "id": "ring3",
-      "top": -126.46,
+      "top": -59.26,
       "left": 220.84,
       "attrs": { "pixels": "10" }
     },
-    { "type": "wokwi-ir-receiver", "id": "ir1", "top": -58.95, "left": -184.18, "attrs": {} },
-    { "type": "wokwi-ir-remote", "id": "remote1", "top": -67.2, "left": -364.8, "attrs": {} }
+    { "type": "wokwi-ir-receiver", "id": "ir1", "top": -337.35, "left": -222.58, "attrs": {} },
+    { "type": "wokwi-ir-remote", "id": "remote1", "top": -336, "left": -393.6, "attrs": {} },
+    {
+      "type": "wokwi-membrane-keypad",
+      "id": "keypad1",
+      "top": 362.8,
+      "left": -493.6,
+      "attrs": {
+        "keys": [ "1", "2", "3", "D", "4", "5", "6", "P", "7", "8", "9", "L", "R", "0", "#", "E" ]
+      }
+    }
   ],
   "connections": [
     [ "led1:A", "r1:1", "green", [ "v0" ] ],
-    [ "led1:C", "uno:GND.1", "green", [ "v0" ] ],
-    [ "ring1:GND", "uno:GND.1", "black", [ "v0" ] ],
-    [ "ring1:VCC", "uno:5V", "red", [ "v0" ] ],
-    [ "ring1:DIN", "uno:5", "green", [ "v0" ] ],
-    [ "ring2:GND", "uno:GND.1", "black", [ "v0" ] ],
-    [ "ring2:VCC", "uno:5V", "red", [ "v0" ] ],
-    [ "ring2:DIN", "uno:5", "green", [ "v0" ] ],
-    [ "ring3:GND", "uno:GND.1", "black", [ "v0" ] ],
-    [ "ring3:VCC", "uno:5V", "red", [ "v0" ] ],
-    [ "ring3:DIN", "uno:5", "green", [ "v0" ] ],
-    [ "ir1:VCC", "uno:5V", "red", [ "v0" ] ],
-    [ "r1:2", "uno:12", "green", [ "h0" ] ],
-    [ "ir1:GND", "uno:GND.2", "black", [ "v0" ] ],
-    [ "ir1:DAT", "uno:3", "green", [ "v0" ] ]
+    [ "led1:C", "mega:GND.1", "green", [ "v0" ] ],
+    [ "ring1:GND", "mega:GND.1", "black", [ "v0" ] ],
+    [ "ring1:VCC", "mega:5V", "red", [ "v0" ] ],
+    [ "ring1:DIN", "mega:11", "green", [ "v0" ] ],
+    [ "ring2:GND", "mega:GND.1", "black", [ "v0" ] ],
+    [ "ring2:VCC", "mega:5V", "red", [ "v0" ] ],
+    [ "ring2:DIN", "mega:11", "green", [ "v0" ] ],
+    [ "ring3:GND", "mega:GND.1", "black", [ "v0" ] ],
+    [ "ring3:VCC", "mega:5V", "red", [ "v0" ] ],
+    [ "ring3:DIN", "mega:11", "green", [ "v0" ] ],
+    [ "ir1:VCC", "mega:5V", "red", [ "v0" ] ],
+    [ "r1:2", "mega:12", "green", [ "h0" ] ],
+    [ "ir1:GND", "mega:GND.2", "black", [ "v0" ] ],
+    [ "ir1:DAT", "mega:10", "green", [ "v0" ] ],
+    [ "keypad1:R1", "mega:2", "cyan", [ "v0" ] ],
+    [ "keypad1:R2", "mega:3", "cyan", [ "v0" ] ],
+    [ "keypad1:R3", "mega:4", "cyan", [ "v0" ] ],
+    [ "keypad1:R4", "mega:5", "cyan", [ "v0" ] ],
+    [ "keypad1:C1", "mega:6", "magenta", [ "v0" ] ],
+    [ "keypad1:C2", "mega:7", "magenta", [ "v0" ] ],
+    [ "keypad1:C3", "mega:8", "magenta", [ "v0" ] ],
+    [ "keypad1:C4", "mega:9", "magenta", [ "v0" ] ]
   ],
   "dependencies": {}
 }

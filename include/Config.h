@@ -9,7 +9,7 @@
 // DFRobotDFPlayerMini myDFPlayer;
 
 // ----------------- IR -----------------
-#define IR_RECEIVE_PIN 3
+#define IR_RECEIVE_PIN 10
 
 // Remote button codes
 #define BTN_0       104
@@ -30,10 +30,13 @@
 #define BTN_POWER   162
 
 // ----------------- LEDS -----------------
+// #define NUM_LEDS   22
 #define NUM_LEDS   22
-#define DATA_PIN   5
+#define DATA_PIN   11
 #define CLOCK_PIN  13
 #define LED_POWER_LIMIT_MA 500
 
 // ----------------- Misc -----------------
 #define SINGLE_LED_PIN 12
+
+// ----------------- Keypad -----------------

@@ -1,12 +1,14 @@
-#include "Arduino.h"
-#include "FastLED.h"
-#include "IRremote.hpp"
-// #include "SoftwareSerial.h"
-// #include "DFRobotDFPlayerMini.h"
+#include <Arduino.h>
+#include <FastLED.h>
+// #include <IRremote.hpp>
+// #include <SoftwareSerial.h>
+// #include <DFRobotDFPlayerMini.h>
 
 #include "Config.h"
 #include "Globals.h"
 #include "IRHandler.h"
+#include "KeyHandler.h"
+#include "SerialHandler.h"
 #include "Animations.h"
 
 void setup() {
@@ -26,7 +28,7 @@ void setup() {
     // delay(600);
 
     // ---------------- IR Receiver ----------------
-    IrReceiver.begin(IR_RECEIVE_PIN);
+    initIR();
     Serial.println(F("IR Receiver Ready."));
 
     // ---------------- LED Setup ----------------
@@ -37,9 +39,17 @@ void setup() {
 
     radChase2 = true; // initial demo effect
     Serial.println(F("Setup Completed.\n"));
+
+    // запускаем свет
+    // smoothChase = true; delaySpeed = 80; 
+    // Serial.println(F("Start Time Travel Mode")); 
+    resetModes();       
+    // timeTravel = true; delaySpeed = 113;
 }
 
 void loop() {
-    handleIRRemote();
+    // handleIRRemote();
+    handleKey();
+    handleSerial();
     handleAnimations();
 }

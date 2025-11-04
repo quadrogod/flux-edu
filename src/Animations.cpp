@@ -1,7 +1,83 @@
-#include "FastLED.h"
+#include <FastLED.h>
 #include "Config.h"
 #include "Globals.h"
 #include "Animations.h"
+
+CRGB leds[NUM_LEDS];
+
+uint8_t hue = 0;
+int delaySpeed = 80;
+float movieSpeed = 34.45;
+
+bool timeTravel = false;
+bool smoothChase = false;
+bool movieChase = false;
+bool movieChaseSimple = false;
+bool thirtyChase = false;
+bool radChase = false;
+bool radChase2 = false;
+bool rainbowChase = false;
+
+unsigned long previousTime = 0;
+
+void resetModes() {
+    timeTravel = smoothChase = movieChase = movieChaseSimple =
+    thirtyChase = radChase = radChase2 = rainbowChase = false;
+}
+
+void setSmoothChase() {
+    resetModes();
+    smoothChase = true; 
+    delaySpeed = 80;
+}
+
+void setMovieChase() {
+    resetModes();
+    movieChase = true; 
+    movieSpeed = 22.97;
+}
+
+void setMovieChaseSimple() {
+    resetModes();
+    movieChaseSimple = true; 
+    movieSpeed = 34.45;
+}
+
+void setThirtyChase() {
+    resetModes();
+    thirtyChase = true; 
+    movieSpeed = 33.33; 
+}
+
+void setRadChase() {
+    resetModes();
+    radChase = true; 
+    movieSpeed = 66.66;
+}
+
+void setRadChase2() {
+    resetModes();
+    radChase2 = true; 
+    movieSpeed = 66.66;
+}
+
+void setTimeTravel() {
+    resetModes();
+    timeTravel = true; 
+    delaySpeed = 113;
+}
+
+void setRainbowChase() {
+    resetModes();
+    rainbowChase = true; 
+    movieSpeed = 66.66;
+}
+
+void setOff() {
+    resetModes();
+    FastLED.clear(); 
+    FastLED.show();
+}
 
 void handleAnimations() {
     if (smoothChase)       runSmoothChase();
@@ -85,7 +161,7 @@ void runRainbowChase() {
 }
 
 void runTimeTravel() {
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < NUM_LEDS; i++) {
         for (int j = 0; j <= 6; j++) {
             if (i - j >= 0) leds[i - j] = CHSV(28, 150, 60 + j * 30);
         }
