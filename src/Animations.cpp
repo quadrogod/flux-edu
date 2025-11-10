@@ -10,6 +10,7 @@ int delaySpeed = 80;
 float movieSpeed = 34.45;
 
 bool timeTravel = false;
+bool movieTimeTravel = false;
 bool smoothChase = false;
 bool movieChase = false;
 bool movieChaseSimple = false;
@@ -22,7 +23,7 @@ unsigned long previousTime = 0;
 
 void resetModes() {
     timeTravel = smoothChase = movieChase = movieChaseSimple =
-    thirtyChase = radChase = radChase2 = rainbowChase = false;
+    thirtyChase = radChase = radChase2 = rainbowChase = movieTimeTravel = false;
 }
 
 void setSmoothChase() {
@@ -67,6 +68,12 @@ void setTimeTravel() {
     delaySpeed = 113;
 }
 
+void setMovieTimeTravel() {
+    resetModes();
+    movieTimeTravel = true; 
+    delaySpeed = 113;
+}
+
 void setRainbowChase() {
     resetModes();
     rainbowChase = true; 
@@ -87,6 +94,7 @@ void handleAnimations() {
     else if (radChase)     runRadChase();
     else if (radChase2)    runRadChase2();
     else if (timeTravel)   runTimeTravel();
+    else if (movieTimeTravel)   runMovieTimeTravel();
     else if (rainbowChase) runRainbowChase();
 }
 
@@ -183,5 +191,32 @@ void runTimeTravel() {
         delaySpeed = 80;
         timeTravel = false;
         smoothChase = true;
+    }
+}
+
+void runMovieTimeTravel() {
+    for (int i = 0; i < NUM_LEDS; i++) {
+        for (int j = 0; j <= 6; j++) {
+            if (i - j >= 0) leds[i - j] = CHSV(22, 200, 60 + j * 30);
+        }
+        FastLED.show();
+        delay(delaySpeed);
+        FastLED.clear();
+    }
+
+    delaySpeed *= 0.837;
+
+    if (delaySpeed < 1) {
+        digitalWrite(SINGLE_LED_PIN, HIGH);
+        fill_solid(leds, NUM_LEDS, CRGB::Blue);
+        FastLED.show();
+        delay(3300);
+        FastLED.clear();
+        FastLED.show();
+        digitalWrite(SINGLE_LED_PIN, LOW);
+        delaySpeed = 80;
+        timeTravel = false;
+        radChase2 = true; 
+        movieSpeed = 66.66;
     }
 }

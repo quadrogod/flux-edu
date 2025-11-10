@@ -68,7 +68,7 @@
     [ "r1:2", "mega:12", "green", [ "h0" ] ],
     [ "ir1:GND", "mega:GND.2", "black", [ "v0" ] ],
     [ "ir1:DAT", "mega:10", "green", [ "v0" ] ],
-    [ "keypad1:R1", "mega:2", "cyan", [ "v0" ] ],
+    [ "keypad1:R1", "mega:2", "cyan", [ "v0" ] ], 
     [ "keypad1:R2", "mega:3", "cyan", [ "v0" ] ],
     [ "keypad1:R3", "mega:4", "cyan", [ "v0" ] ],
     [ "keypad1:R4", "mega:5", "cyan", [ "v0" ] ],

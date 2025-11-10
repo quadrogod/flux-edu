@@ -27,10 +27,40 @@ void handleSerial() {
             break;
             
         case '3':
+            setThirtyChase();
+            Serial.println(F("Thirty Chase activated"));
+            break;
+
+        case '4':
+            setMovieChase();
+            Serial.println(F("Movie Chase activated"));
+            break;
+          
+        case '5':
+            setMovieChaseSimple();
+            Serial.println(F("Movie Chase Simple activated"));
+            break;
+
+        case '6':
+            setRadChase();
+            Serial.println(F("Rad Chase activated"));
+            break;
+
+        case '7':
+            setRadChase2();
+            Serial.println(F("Rad Chase 2 activated"));
+            break;
+
+        case '8':
             setRainbowChase();
             Serial.println(F("Rainbow activated"));
             break;
-            
+
+        case '9':
+            setMovieTimeTravel();
+            Serial.println(F("Movie Time Travel activated"));
+            break;
+
         case '0':
             setOff();
             Serial.println(F("LEDs cleared"));
@@ -38,6 +68,7 @@ void handleSerial() {
             
         default:
             Serial.println(F("Unknown command"));
+            Serial.println(k);
             break;
     }
 }
