@@ -4,6 +4,28 @@
 #include "Globals.h"
 #include "Animations.h"
 
+// Состояния для Movie Time Travel эффекта
+enum class TTState : uint8_t {
+    RUNNING,        // Основная анимация ускорения
+    FLASH_START,    // Начало яркой вспышки (88 mph)
+    FLASH_HOLD,     // Удержание яркой вспышки
+    FLASH_FADE,     // Плавное затухание перед взрывами (ИЗМЕНЕНО)
+    DARK_1,         // Темнота перед первым взрывом
+    BURST_1,        // Первый взрыв (короткая вспышка)
+    DARK_2,         // Темнота между взрывами
+    BURST_2,        // Второй взрыв (ярче и дольше)
+    DARK_3,         // Темнота перед появлением
+    BURST_3,        // Третий взрыв - появление (самый яркий)
+    FADE_OUT,       // Плавное затухание
+    COMPLETE        // Завершение, переход на следующий режим
+};
+
+static TTState ttState = TTState::RUNNING;
+static GTimer<millis> ttTimer;
+// static uint8_t fadeBrightness = 255;
+static unsigned long fadeStartTime = 0; // Для отслеживания времени фейда
+//
+
 CRGB leds[NUM_LEDS];
 uint8_t hue = 0;
 
@@ -36,6 +58,9 @@ void resetModes() {
     animStep = 0;
     animSubStep = 0;
     animTimer.stop();
+    // Сброс Time Travel состояния
+    ttState = TTState::RUNNING;
+    ttTimer.stop();
 }
 
 void setSmoothChase() {
@@ -122,7 +147,8 @@ void handleAnimations() {
     else if (radChase) runRadChase();
     else if (radChase2) runRadChase2();
     else if (timeTravel) runTimeTravel();
-    else if (movieTimeTravel) runMovieTimeTravel();
+    // else if (movieTimeTravel) runMovieTimeTravel();
+    else if (movieTimeTravel) runMovieTimeTravelReal();
     else if (rainbowChase) runRainbowChase();
 }
 
@@ -285,11 +311,683 @@ void runMovieTimeTravel() {
             FastLED.clear();
             FastLED.show();
             digitalWrite(SINGLE_LED_PIN, LOW);
-            
+            // first Brust
+            delay(400);
+            fill_solid(leds, NUM_LEDS, CRGB::Blue);
+            FastLED.show();
+            digitalWrite(SINGLE_LED_PIN, HIGH);
+            delay(1000);
+            FastLED.clear();
+            FastLED.show();
+            digitalWrite(SINGLE_LED_PIN, LOW);
+            // second Brust
+            delay(400);
+            fill_solid(leds, NUM_LEDS, CRGB::Blue);
+            FastLED.show();
+            digitalWrite(SINGLE_LED_PIN, HIGH);
+            delay(1000);
+            FastLED.clear();
+            FastLED.show();
+            digitalWrite(SINGLE_LED_PIN, LOW);
+            delay(400);
             // Переход на следующий режим
             delaySpeed = 80;
             movieSpeed = 66.66;
             setRadChase2();
         }
+    }
+}
+
+// void runMovieTimeTravelReal() {
+//     // Основная анимация Time Travel (ускорение)
+//     if (ttState == TTState::RUNNING) {
+//         if (!animTimer.tick()) return;
+        
+//         FastLED.clear();
+//         for (int j = 0; j <= 6; j++) {
+//             if (animStep - j >= 0 && animStep - j < NUM_LEDS) {
+//                 leds[animStep - j] = CHSV(22, 200, 60 + j * 30);
+//             }
+//         }
+//         FastLED.show();
+        
+//         animStep++;
+        
+//         if (animStep >= NUM_LEDS) {
+//             delaySpeed *= 0.837;
+//             animTimer.setTime(delaySpeed);
+//             animStep = 0;
+            
+//             // Когда скорость достигает максимума - начинаем финальную последовательность
+//             if (delaySpeed < 1) {
+//                 ttState = TTState::FLASH_START;
+//                 ttTimer.start(50); // Небольшая задержка перед вспышкой
+//                 animTimer.stop();
+//                 return;
+//             }
+//         }
+//         return;
+//     }
+    
+//     // ========================================================================
+//     // ФИНАЛЬНАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ ВСПЫШЕК (как в фильме)
+//     // ========================================================================
+    
+//     if (!ttTimer.tick()) return;
+    
+//     switch (ttState) {
+//         case TTState::FLASH_START:
+//             // Момент достижения 88 mph - яркая синяя вспышка
+//             digitalWrite(SINGLE_LED_PIN, HIGH);
+//             fill_solid(leds, NUM_LEDS, CRGB::Blue);
+//             FastLED.setBrightness(255);
+//             FastLED.show();
+//             ttState = TTState::FLASH_HOLD;
+//             ttTimer.start(1800); // Долгое яркое свечение
+//             break;
+            
+//         case TTState::FLASH_HOLD:
+//             // Удерживаем яркую вспышку
+//             ttState = TTState::FLASH_FADE;
+//             ttTimer.start(500); // Начало затухания
+//             break;
+            
+//         case TTState::FLASH_FADE:
+//             // Легкое затухание перед взрывами
+//             FastLED.setBrightness(180);
+//             FastLED.show();
+//             ttState = TTState::DARK_1;
+//             ttTimer.start(200); // Короткая пауза
+//             break;
+            
+//         case TTState::DARK_1:
+//             // Темнота перед первым взрывом
+//             digitalWrite(SINGLE_LED_PIN, LOW);
+//             FastLED.clear();
+//             FastLED.show();
+//             ttState = TTState::BURST_1;
+//             ttTimer.start(150); // Короткая темнота
+//             break;
+            
+//         case TTState::BURST_1:
+//             // Первый взрыв - короткая яркая вспышка (бело-голубая)
+//             digitalWrite(SINGLE_LED_PIN, HIGH);
+//             fill_solid(leds, NUM_LEDS, CRGB(150, 180, 255));
+//             FastLED.setBrightness(255);
+//             FastLED.show();
+//             ttState = TTState::DARK_2;
+//             ttTimer.start(180); // Длительность первого взрыва
+//             break;
+            
+//         case TTState::DARK_2:
+//             // Темнота между первым и вторым взрывом
+//             digitalWrite(SINGLE_LED_PIN, LOW);
+//             FastLED.clear();
+//             FastLED.show();
+//             ttState = TTState::BURST_2;
+//             ttTimer.start(250); // Пауза между взрывами
+//             break;
+            
+//         case TTState::BURST_2:
+//             // Второй взрыв - ярче и дольше
+//             digitalWrite(SINGLE_LED_PIN, HIGH);
+//             fill_solid(leds, NUM_LEDS, CRGB(180, 200, 255));
+//             FastLED.setBrightness(255);
+//             FastLED.show();
+//             ttState = TTState::DARK_3;
+//             ttTimer.start(220); // Длительность второго взрыва
+//             break;
+            
+//         case TTState::DARK_3:
+//             // Темнота перед появлением DeLorean
+//             digitalWrite(SINGLE_LED_PIN, LOW);
+//             FastLED.clear();
+//             FastLED.show();
+//             ttState = TTState::BURST_3;
+//             ttTimer.start(180); // Короткая пауза перед появлением
+//             break;
+            
+//         case TTState::BURST_3:
+//             // Третий взрыв - появление DeLorean (самый яркий и длинный)
+//             digitalWrite(SINGLE_LED_PIN, HIGH);
+//             fill_solid(leds, NUM_LEDS, CRGB::White); // Чисто белый
+//             FastLED.setBrightness(255);
+//             FastLED.show();
+//             fadeBrightness = 255;
+//             ttState = TTState::FADE_OUT;
+//             ttTimer.start(450); // Длинная вспышка появления
+//             break;
+            
+//         case TTState::FADE_OUT:
+//             // Плавное затухание после появления
+//             if (fadeBrightness > 0) {
+//                 fadeBrightness -= 15;
+//                 if (fadeBrightness < 15) fadeBrightness = 0;
+//                 FastLED.setBrightness(fadeBrightness);
+//                 FastLED.show();
+//                 ttTimer.start(25); // Шаг затухания
+//             } else {
+//                 digitalWrite(SINGLE_LED_PIN, LOW);
+//                 FastLED.clear();
+//                 FastLED.show();
+//                 ttState = TTState::COMPLETE;
+//                 ttTimer.start(400); // Финальная пауза
+//             }
+//             break;
+            
+//         case TTState::COMPLETE:
+//             // Восстановление и переход на следующий режим
+//             FastLED.setBrightness(255);
+//             delaySpeed = 80;
+//             movieSpeed = 66.66;
+//             ttState = TTState::RUNNING; // Сброс состояния
+//             setRadChase2(); // Переход на RadChase2
+//             break;
+            
+//         default:
+//             break;
+//     }
+// }
+
+// void runMovieTimeTravelReal() {
+//     // Основная анимация Time Travel (ускорение)
+//     if (ttState == TTState::RUNNING) {
+//         if (!animTimer.tick()) return;
+        
+//         FastLED.clear();
+//         for (int j = 0; j <= 6; j++) {
+//             if (animStep - j >= 0 && animStep - j < NUM_LEDS) {
+//                 leds[animStep - j] = CHSV(22, 200, 60 + j * 30);
+//             }
+//         }
+//         FastLED.show();
+        
+//         animStep++;
+        
+//         if (animStep >= NUM_LEDS) {
+//             delaySpeed *= 0.837;
+//             animTimer.setTime(delaySpeed);
+//             animStep = 0;
+            
+//             if (delaySpeed < 1) {
+//                 ttState = TTState::FLASH_START;
+//                 ttTimer.start(50);
+//                 animTimer.stop();
+//                 return;
+//             }
+//         }
+//         return;
+//     }
+    
+//     // ========================================================================
+//     // СПЕЦИАЛЬНАЯ ОБРАБОТКА ПЛАВНОГО ЗАТУХАНИЯ
+//     // ========================================================================
+    
+//     if (ttState == TTState::FLASH_FADE) {
+//         unsigned long elapsed = millis() - fadeStartTime;
+//         const unsigned long fadeDuration = 500; // 500 мс для плавного затухания
+        
+//         if (elapsed < fadeDuration) {
+//             // Плавная интерполяция от 255 до 180 за 500 мс
+//             uint8_t brightness = map(elapsed, 0, fadeDuration, 255, 180);
+//             FastLED.setBrightness(brightness);
+//             FastLED.show();
+//             return; // Продолжаем затухание
+//         } else {
+//             // Затухание завершено
+//             ttState = TTState::DARK_1;
+//             ttTimer.start(200);
+//             return;
+//         }
+//     }
+    
+//     // ========================================================================
+//     // ОБЫЧНАЯ ОБРАБОТКА ОСТАЛЬНЫХ СОСТОЯНИЙ
+//     // ========================================================================
+    
+//     if (!ttTimer.tick()) return;
+    
+//     switch (ttState) {
+//         case TTState::FLASH_START:
+//             // Момент достижения 88 mph - яркая синяя вспышка
+//             digitalWrite(SINGLE_LED_PIN, HIGH);
+//             fill_solid(leds, NUM_LEDS, CRGB::Blue);
+//             FastLED.setBrightness(255);
+//             FastLED.show();
+//             ttState = TTState::FLASH_HOLD;
+//             ttTimer.start(1800); // Долгое яркое свечение
+//             break;
+            
+//         case TTState::FLASH_HOLD:
+//             // Удерживаем яркую вспышку
+//             ttState = TTState::FLASH_FADE;
+//             fadeStartTime = millis(); // Запоминаем время начала фейда
+//             // НЕ используем ttTimer здесь - плавное затухание обрабатывается выше
+//             break;
+            
+//         case TTState::DARK_1:
+//             // Темнота перед первым взрывом
+//             digitalWrite(SINGLE_LED_PIN, LOW);
+//             FastLED.clear();
+//             FastLED.show();
+//             ttState = TTState::BURST_1;
+//             ttTimer.start(150);
+//             break;
+            
+//         case TTState::BURST_1:
+//             // Первый взрыв - короткая яркая вспышка (бело-голубая)
+//             digitalWrite(SINGLE_LED_PIN, HIGH);
+//             fill_solid(leds, NUM_LEDS, CRGB(150, 180, 255));
+//             FastLED.setBrightness(255);
+//             FastLED.show();
+//             ttState = TTState::DARK_2;
+//             ttTimer.start(180);
+//             break;
+            
+//         case TTState::DARK_2:
+//             // Темнота между первым и вторым взрывом
+//             digitalWrite(SINGLE_LED_PIN, LOW);
+//             FastLED.clear();
+//             FastLED.show();
+//             ttState = TTState::BURST_2;
+//             ttTimer.start(250);
+//             break;
+            
+//         case TTState::BURST_2:
+//             // Второй взрыв - ярче и дольше
+//             digitalWrite(SINGLE_LED_PIN, HIGH);
+//             fill_solid(leds, NUM_LEDS, CRGB(180, 200, 255));
+//             FastLED.setBrightness(255);
+//             FastLED.show();
+//             ttState = TTState::DARK_3;
+//             ttTimer.start(220);
+//             break;
+            
+//         case TTState::DARK_3:
+//             // Темнота перед появлением DeLorean
+//             digitalWrite(SINGLE_LED_PIN, LOW);
+//             FastLED.clear();
+//             FastLED.show();
+//             ttState = TTState::BURST_3;
+//             ttTimer.start(180);
+//             break;
+            
+//         case TTState::BURST_3:
+//             // Третий взрыв - появление DeLorean (самый яркий и длинный)
+//             digitalWrite(SINGLE_LED_PIN, HIGH);
+//             fill_solid(leds, NUM_LEDS, CRGB::White);
+//             FastLED.setBrightness(255);
+//             FastLED.show();
+//             ttState = TTState::FADE_OUT;
+//             fadeStartTime = millis(); // Запоминаем время начала финального фейда
+//             ttTimer.start(450);
+//             break;
+            
+//         case TTState::FADE_OUT:
+//             // Плавное затухание после появления
+//             {
+//                 unsigned long elapsed = millis() - fadeStartTime;
+//                 const unsigned long fadeDuration = 600; // 600 мс для плавного затухания
+                
+//                 if (elapsed < fadeDuration) {
+//                     // Плавная интерполяция от 255 до 0
+//                     uint8_t brightness = map(elapsed, 0, fadeDuration, 255, 0);
+//                     FastLED.setBrightness(brightness);
+//                     FastLED.show();
+//                 } else {
+//                     digitalWrite(SINGLE_LED_PIN, LOW);
+//                     FastLED.clear();
+//                     FastLED.show();
+//                     ttState = TTState::COMPLETE;
+//                     ttTimer.start(400);
+//                 }
+//             }
+//             break;
+            
+//         case TTState::COMPLETE:
+//             // Восстановление и переход на следующий режим
+//             FastLED.setBrightness(255);
+//             delaySpeed = 80;
+//             movieSpeed = 66.66;
+//             ttState = TTState::RUNNING;
+//             setRadChase2();
+//             break;
+            
+//         default:
+//             break;
+//     }
+// }
+
+// void runMovieTimeTravelReal() {
+//     // Основная анимация Time Travel (ускорение)
+//     if (ttState == TTState::RUNNING) {
+//         if (!animTimer.tick()) return;
+        
+//         FastLED.clear();
+//         for (int j = 0; j <= 6; j++) {
+//             if (animStep - j >= 0 && animStep - j < NUM_LEDS) {
+//                 leds[animStep - j] = CHSV(22, 200, 60 + j * 30);
+//             }
+//         }
+//         FastLED.show();
+        
+//         animStep++;
+        
+//         if (animStep >= NUM_LEDS) {
+//             delaySpeed *= 0.837;
+//             animTimer.setTime(delaySpeed);
+//             animStep = 0;
+            
+//             if (delaySpeed < 1) {
+//                 ttState = TTState::FLASH_START;
+//                 ttTimer.start(50);
+//                 animTimer.stop();
+//                 return;
+//             }
+//         }
+//         return;
+//     }
+    
+//     // ========================================================================
+//     // СПЕЦИАЛЬНАЯ ОБРАБОТКА ПЛАВНОГО ЗАТУХАНИЯ (без таймера!)
+//     // ========================================================================
+    
+//     if (ttState == TTState::FLASH_FADE) {
+//         unsigned long elapsed = millis() - fadeStartTime;
+//         const unsigned long fadeDuration = 500;
+        
+//         if (elapsed < fadeDuration) {
+//             uint8_t brightness = map(elapsed, 0, fadeDuration, 255, 180);
+//             FastLED.setBrightness(brightness);
+//             FastLED.show();
+//             return;
+//         } else {
+//             ttState = TTState::DARK_1;
+//             ttTimer.start(200);
+//             return;
+//         }
+//     }
+    
+//     // ОБРАБОТКА ФИНАЛЬНОГО ЗАТУХАНИЯ (тоже без таймера!)
+//     if (ttState == TTState::FADE_OUT) {
+//         unsigned long elapsed = millis() - fadeStartTime;
+//         const unsigned long fadeDuration = 600;
+        
+//         if (elapsed < fadeDuration) {
+//             // Плавная интерполяция от 255 до 0
+//             uint8_t brightness = map(elapsed, 0, fadeDuration, 255, 0);
+//             FastLED.setBrightness(brightness);
+//             FastLED.show();
+//             return; // Важно! Выходим здесь, чтобы обрабатывать на каждой итерации
+//         } else {
+//             // Затухание завершено
+//             digitalWrite(SINGLE_LED_PIN, LOW);
+//             FastLED.clear();
+//             FastLED.show();
+//             ttState = TTState::COMPLETE;
+//             ttTimer.start(400);
+//             return;
+//         }
+//     }
+    
+//     // ========================================================================
+//     // ОБЫЧНАЯ ОБРАБОТКА ОСТАЛЬНЫХ СОСТОЯНИЙ
+//     // ========================================================================
+    
+//     if (!ttTimer.tick()) return;
+    
+//     switch (ttState) {
+//         case TTState::FLASH_START:
+//             digitalWrite(SINGLE_LED_PIN, HIGH);
+//             fill_solid(leds, NUM_LEDS, CRGB::Blue);
+//             FastLED.setBrightness(255);
+//             FastLED.show();
+//             ttState = TTState::FLASH_HOLD;
+//             ttTimer.start(1800);
+//             break;
+            
+//         case TTState::FLASH_HOLD:
+//             ttState = TTState::FLASH_FADE;
+//             fadeStartTime = millis();
+//             break;
+            
+//         case TTState::DARK_1:
+//             digitalWrite(SINGLE_LED_PIN, LOW);
+//             FastLED.clear();
+//             FastLED.show();
+//             ttState = TTState::BURST_1;
+//             ttTimer.start(150);
+//             break;
+            
+//         case TTState::BURST_1:
+//             digitalWrite(SINGLE_LED_PIN, HIGH);
+//             fill_solid(leds, NUM_LEDS, CRGB(150, 180, 255));
+//             FastLED.setBrightness(255);
+//             FastLED.show();
+//             ttState = TTState::DARK_2;
+//             ttTimer.start(180);
+//             break;
+            
+//         case TTState::DARK_2:
+//             digitalWrite(SINGLE_LED_PIN, LOW);
+//             FastLED.clear();
+//             FastLED.show();
+//             ttState = TTState::BURST_2;
+//             ttTimer.start(250);
+//             break;
+            
+//         case TTState::BURST_2:
+//             digitalWrite(SINGLE_LED_PIN, HIGH);
+//             fill_solid(leds, NUM_LEDS, CRGB(180, 200, 255));
+//             FastLED.setBrightness(255);
+//             FastLED.show();
+//             ttState = TTState::DARK_3;
+//             ttTimer.start(220);
+//             break;
+            
+//         case TTState::DARK_3:
+//             digitalWrite(SINGLE_LED_PIN, LOW);
+//             FastLED.clear();
+//             FastLED.show();
+//             ttState = TTState::BURST_3;
+//             ttTimer.start(180);
+//             break;
+            
+//         case TTState::BURST_3:
+//             // Третий взрыв - самый яркий
+//             digitalWrite(SINGLE_LED_PIN, HIGH);
+//             fill_solid(leds, NUM_LEDS, CRGB::White);
+//             FastLED.setBrightness(255);
+//             FastLED.show();
+//             ttState = TTState::FADE_OUT;
+//             fadeStartTime = millis(); // Запоминаем время начала затухания
+//             // НЕ используем ttTimer.start() здесь!
+//             break;
+            
+//         case TTState::COMPLETE:
+//             // Восстановление и переход на следующий режим
+//             FastLED.setBrightness(255);
+//             delaySpeed = 80;
+//             movieSpeed = 66.66;
+//             ttState = TTState::RUNNING;
+//             setRadChase2();
+//             break;
+            
+//         default:
+//             break;
+//     }
+// }
+
+void runMovieTimeTravelReal() {
+    // Основная анимация Time Travel (ускорение)
+    if (ttState == TTState::RUNNING) {
+        if (!animTimer.tick()) return;
+        
+        FastLED.clear();
+        for (int j = 0; j <= 6; j++) {
+            if (animStep - j >= 0 && animStep - j < NUM_LEDS) {
+                leds[animStep - j] = CHSV(22, 200, 60 + j * 30);
+            }
+        }
+        FastLED.show();
+        
+        animStep++;
+        
+        if (animStep >= NUM_LEDS) {
+            delaySpeed *= 0.837;
+            animTimer.setTime(delaySpeed);
+            animStep = 0;
+            
+            if (delaySpeed < 1) {
+                ttState = TTState::FLASH_START;
+                ttTimer.start(50);
+                animTimer.stop();
+                return;
+            }
+        }
+        return;
+    }
+    
+    // ========================================================================
+    // СПЕЦИАЛЬНАЯ ОБРАБОТКА ПЛАВНОГО ЗАТУХАНИЯ СИНЕГО
+    // ========================================================================
+    
+    if (ttState == TTState::FLASH_FADE) {
+        unsigned long elapsed = millis() - fadeStartTime;
+        const unsigned long fadeDuration = 500;
+        
+        if (elapsed < fadeDuration) {
+            uint8_t brightness = map(elapsed, 0, fadeDuration, 255, 180);
+            FastLED.setBrightness(brightness);
+            FastLED.show();
+            return;
+        } else {
+            // ВАЖНО: Перед переходом к темноте плавно выключаем синий
+            ttState = TTState::DARK_1;
+            fadeStartTime = millis(); // Сбрасываем таймер для финального затухания
+            return; // НЕ вызываем ttTimer.start() здесь!
+        }
+    }
+    
+    // ОБРАБОТКА ТЕМНОТЫ С ПЛАВНЫМ ЗАТУХАНИЕМ СИНЕГО
+    if (ttState == TTState::DARK_1) {
+        unsigned long elapsed = millis() - fadeStartTime;
+        const unsigned long fadeDuration = 200; // 200 мс для затухания в темноту
+        
+        if (elapsed < fadeDuration) {
+            // Плавное затухание от 180 до 0
+            uint8_t brightness = map(elapsed, 0, fadeDuration, 180, 0);
+            FastLED.setBrightness(brightness);
+            FastLED.show();
+            return;
+        } else {
+            // Затухание завершено - полная темнота
+            digitalWrite(SINGLE_LED_PIN, LOW);
+            FastLED.clear();
+            FastLED.setBrightness(255); // Восстанавливаем яркость для следующих эффектов
+            FastLED.show();
+            ttState = TTState::BURST_1;
+            ttTimer.start(150);
+            return;
+        }
+    }
+    
+    // ОБРАБОТКА ФИНАЛЬНОГО ЗАТУХАНИЯ БЕЛОГО
+    if (ttState == TTState::FADE_OUT) {
+        unsigned long elapsed = millis() - fadeStartTime;
+        const unsigned long fadeDuration = 600;
+        
+        if (elapsed < fadeDuration) {
+            uint8_t brightness = map(elapsed, 0, fadeDuration, 255, 0);
+            FastLED.setBrightness(brightness);
+            FastLED.show();
+            return;
+        } else {
+            digitalWrite(SINGLE_LED_PIN, LOW);
+            FastLED.clear();
+            FastLED.setBrightness(255); // Восстанавливаем яркость
+            FastLED.show();
+            ttState = TTState::COMPLETE;
+            ttTimer.start(400);
+            return;
+        }
+    }
+    
+    // ========================================================================
+    // ОБЫЧНАЯ ОБРАБОТКА ОСТАЛЬНЫХ СОСТОЯНИЙ
+    // ========================================================================
+    
+    if (!ttTimer.tick()) return;
+    
+    switch (ttState) {
+        case TTState::FLASH_START:
+            digitalWrite(SINGLE_LED_PIN, HIGH);
+            fill_solid(leds, NUM_LEDS, CRGB::Blue);
+            FastLED.setBrightness(255);
+            FastLED.show();
+            ttState = TTState::FLASH_HOLD;
+            ttTimer.start(1800);
+            break;
+            
+        case TTState::FLASH_HOLD:
+            ttState = TTState::FLASH_FADE;
+            fadeStartTime = millis();
+            break;
+            
+        // DARK_1 теперь обрабатывается выше, убираем отсюда
+        
+        case TTState::BURST_1:
+            digitalWrite(SINGLE_LED_PIN, HIGH);
+            fill_solid(leds, NUM_LEDS, CRGB(150, 180, 255));
+            FastLED.setBrightness(255);
+            FastLED.show();
+            ttState = TTState::DARK_2;
+            ttTimer.start(180);
+            break;
+            
+        case TTState::DARK_2:
+            digitalWrite(SINGLE_LED_PIN, LOW);
+            FastLED.clear();
+            FastLED.show();
+            ttState = TTState::BURST_2;
+            ttTimer.start(250);
+            break;
+            
+        case TTState::BURST_2:
+            digitalWrite(SINGLE_LED_PIN, HIGH);
+            fill_solid(leds, NUM_LEDS, CRGB(180, 200, 255));
+            FastLED.setBrightness(255);
+            FastLED.show();
+            ttState = TTState::DARK_3;
+            ttTimer.start(220);
+            break;
+            
+        case TTState::DARK_3:
+            digitalWrite(SINGLE_LED_PIN, LOW);
+            FastLED.clear();
+            FastLED.show();
+            ttState = TTState::BURST_3;
+            ttTimer.start(180);
+            break;
+            
+        case TTState::BURST_3:
+            digitalWrite(SINGLE_LED_PIN, HIGH);
+            fill_solid(leds, NUM_LEDS, CRGB::White);
+            FastLED.setBrightness(255);
+            FastLED.show();
+            ttState = TTState::FADE_OUT;
+            fadeStartTime = millis();
+            break;
+            
+        case TTState::COMPLETE:
+            FastLED.setBrightness(255);
+            delaySpeed = 80;
+            movieSpeed = 66.66;
+            ttState = TTState::RUNNING;
+            setRadChase2();
+            break;
+            
+        default:
+            break;
     }
 }
