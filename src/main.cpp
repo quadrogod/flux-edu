@@ -10,6 +10,7 @@
 #include "KeyHandler.h"
 #include "SerialHandler.h"
 #include "Animations.h"
+#include "TimeCircuits.h"
 
 void setup() {
     pinMode(SINGLE_LED_PIN, OUTPUT);
@@ -32,7 +33,7 @@ void setup() {
     Serial.println(F("IR Receiver Ready."));
 
     // ---------------- LED Setup ----------------
-    FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);
+    FastLED.addLeds<WS2812B, DATA_RING_PIN, GRB>(leds, NUM_LEDS);
     FastLED.setMaxPowerInVoltsAndMilliamps(5, LED_POWER_LIMIT_MA);
     FastLED.clear();
     FastLED.show();
@@ -45,11 +46,14 @@ void setup() {
     // Serial.println(F("Start Time Travel Mode")); 
     resetModes();       
     // timeTravel = true; delaySpeed = 113;
+
+    initTimeCircuits();
 }
 
 void loop() {
     // handleIRRemote();
-    handleKey();
+    // handleKey();
     handleSerial();
     handleAnimations();
+    runTimeCircuitsLoop();
 }

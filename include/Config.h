@@ -32,11 +32,42 @@
 // ----------------- LEDS -----------------
 // #define NUM_LEDS   22
 #define NUM_LEDS   22
-#define DATA_PIN   11
-#define CLOCK_PIN  13
+#define DATA_RING_PIN   11
+// #define CLOCK_PIN  13
 #define LED_POWER_LIMIT_MA 500
 
 // ----------------- Misc -----------------
 #define SINGLE_LED_PIN 12
 
 // ----------------- Keypad -----------------
+
+/* --- Пины 74HC595 ----------------------------------------- */
+#define DATA_PIN      22
+#define LATCH_PIN     23
+#define CLOCK_PIN     24
+
+/* --- LED индикаторы --------------------------------------- */
+#define LED_AM_DEST   30
+#define LED_PM_DEST   31
+#define LED_SEC1_DEST 32
+#define LED_SEC2_DEST 33
+
+#define LED_AM_PRES   34
+#define LED_PM_PRES   35
+#define LED_SEC1_PRES 36
+#define LED_SEC2_PRES 37
+
+#define LED_AM_LAST   38
+#define LED_PM_LAST   39
+#define LED_SEC1_LAST 40
+#define LED_SEC2_LAST 41
+
+/* --- Мультиплекс ------------------------------------------ */
+#define SR_CNT        8        // sr1..sr8
+#define DIGITS_TOTAL  39       // ИЗМЕНЕНО: было 42, стало 39 (3 индикатора по -1 разряду)
+#define DIGIT_US      1500UL   // микросекунды на один разряд
+#define BLINK_MS      1000UL
+#define DEBOUNCE_MS   200UL
+
+/* --- Датчик ----------------------------------------------- */
+#define NTC_PIN       A0
