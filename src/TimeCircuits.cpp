@@ -1,15 +1,15 @@
+// TimeCircuits.cpp
+#include <Arduino.h>
 #include <FastLED.h>
-#include <Keypad.h>
 #include "Config.h"
-#include "KeyHandler.h"
+#include "Globals.h"
+#include "TimeCircuits.h"
 
-/* Паттерны сегментов (общий АНОД: 0=сегмент включен) */
+/* ==================== Segment Patterns ==================== */
 enum {D0,D1,D2,D3,D4,D5,D6,D7,D8,D9,D_MINUS,D_BLANK,
-      // ДОБАВЛЕНО: Буквы для месяцев
       D_A,D_b,D_C,D_d,D_E,D_F,D_G,D_H,D_J,D_L,D_n,D_o,D_P,D_r,D_S,D_t,D_U,D_y};
 
 static const byte SEG_PAT[] = {
-  // Цифры
   0b11000000, // 0
   0b11111001, // 1
   0b10100100, // 2
@@ -22,7 +22,7 @@ static const byte SEG_PAT[] = {
   0b10010000, // 9
   0b10111111, // - (минус)
   0b11111111, // blank (пусто)
-  // ДОБАВЛЕНО: Буквы (7-сегментные приближения)
+  // Буквы для месяцев
   0b10001000, // A
   0b10000011, // b
   0b11000110, // C
@@ -43,112 +43,38 @@ static const byte SEG_PAT[] = {
   0b10010001, // y
 };
 
-/* ДОБАВЛЕНО: Таблица аббревиатур месяцев для 7-сегментного индикатора */
 const byte MONTH_LETTERS[12][3] = {
-  {D_J, D_A, D_n},  // JAN (январь)
-  {D_F, D_E, D_b},  // FEb (февраль)
-  {D_H, D_A, D_r},  // HAr (март, M сложно отобразить)
-  {D_A, D_P, D_r},  // APr (апрель)
-  {D_H, D_A, D_y},  // HAy (май, M→H)
-  {D_J, D_U, D_n},  // JUn (июнь)
-  {D_J, D_U, D_L},  // JUL (июль)
-  {D_A, D_U, D_G},  // AUG (август)
-  {D_S, D_E, D_P},  // SEP (сентябрь)
-  {D_o, D_C, D_t},  // oCt (октябрь)
-  {D_n, D_o, D_BLANK}, // no_ (ноябрь, V сложно)
-  {D_d, D_E, D_C},  // dEC (декабрь)
+  {D_J, D_A, D_n}, {D_F, D_E, D_b}, {D_H, D_A, D_r},
+  {D_A, D_P, D_r}, {D_H, D_A, D_y}, {D_J, D_U, D_n},
+  {D_J, D_U, D_L}, {D_A, D_U, D_G}, {D_S, D_E, D_P},
+  {D_o, D_C, D_t}, {D_n, D_o, D_BLANK}, {D_d, D_E, D_C}
 };
 
-/* --- Время ------------------------------------------------- */
-struct DateTime {
-  int m, d, y, h, min;
-  bool valid;
-  DateTime() { m=d=y=h=min=0; valid=false; }
-
-  String toText() const {
-    char buf[20];
-    snprintf(buf, sizeof(buf), "%02d.%02d.%04d %02d:%02d", d, m, y, h, min);
-    return String(buf);
-  }
-};
-
-DateTime destT, presT, lastT;
-
-/* --- Глобальные ------------------------------------------- */
-byte buf[DIGITS_TOTAL];      // ИЗМЕНЕНО: 39 разрядов (было 42)
-byte curDig = 0;
-unsigned long tDig=0, tBlink=0, ttKey=0, tMin=0; // tKey=0,
-bool blinkTick = false;
-bool jumpLock = false;
-
-enum Mode {NONE, SET_DEST, SET_PRES, SET_LAST};
-Mode mode = NONE;
-String inDigits;
-
-char lastKeyPressed2 = '\0';
-
-const float BETA_THERM = 3950;
-
-/* --- Утилиты ---------------------------------------------- */
-bool isLeap(int y) {
-  return (y%4==0 && y%100!=0) || (y%400==0);
-}
-
-bool dateOk(int M, int D, int Y, int h, int m) {
-  if(M<1 || M>12 || D<1 || h>23 || m>59 || Y<0 || Y>9999) return false;
-  int dim[] = {31,28,31,30,31,30,31,31,30,31,30,31};
-  if(M==2 && isLeap(Y)) dim[1] = 29;
-  return D <= dim[M-1];
-}
-
-DateTime parse12(const String& s) {
-  DateTime d;
-  if(s.length() != 12) return d;
-  d.m   = s.substring(0,2).toInt();
-  d.d   = s.substring(2,4).toInt();
-  d.y   = s.substring(4,8).toInt();
-  d.h   = s.substring(8,10).toInt();
-  d.min = s.substring(10,12).toInt();
-  d.valid = dateOk(d.m, d.d, d.y, d.h, d.min);
-  return d;
-}
-
-void to12h(int h24, int& h12out, bool& pm) {
-  pm = (h24 >= 12);
-  h12out = h24 % 12;
-  if(!h12out) h12out = 12;
-}
-
-/* ИЗМЕНЕНО: Таблица соответствия разрядов (теперь 39 разрядов) */
-/* Destination: buf[0-12]  = 3(month) + 2(day) + 4(year) + 2(hour) + 2(min)
-   Present:     buf[13-25] = 3(month) + 2(day) + 4(year) + 2(hour) + 2(min)
-   Last:        buf[26-38] = 3(month) + 2(day) + 4(year) + 2(hour) + 2(min) */
+/* ==================== Digit Selection Table ==================== */
 struct Sel { byte srIdx; byte bitMask; };
-static const Sel SEL[DIGITS_TOTAL] PROGMEM = {
+static const Sel SEL[39] PROGMEM = {
   // Destination: 0-12
-  {0,1<<0},{0,1<<1},{0,1<<2},                    // sevseg1: 3 разряда (month)
-  {0,1<<3},{0,1<<4},                              // sevseg2: 2 разряда (day)
-  {0,1<<5},{0,1<<6},{1,1<<0},{1,1<<1},           // sevseg3: 4 разряда (year)
-  {1,1<<2},{1,1<<3},                              // sevseg4: 2 разряда (hour)
-  {1,1<<4},{1,1<<5},                              // sevseg5: 2 разряда (min)
-
+  {0,1<<0},{0,1<<1},{0,1<<2},{0,1<<3},{0,1<<4},
+  {0,1<<5},{0,1<<6},{1,1<<0},{1,1<<1},{1,1<<2},
+  {1,1<<3},{1,1<<4},{1,1<<5},
   // Present: 13-25
-  {1,1<<6},{1,1<<7},{2,1<<0},                    // sevseg6: 3 разряда (month)
-  {2,1<<1},{2,1<<2},                              // sevseg7: 2 разряда (day)
-  {2,1<<3},{2,1<<4},{2,1<<5},{2,1<<6},           // sevseg8: 4 разряда (year)
-  {2,1<<7},{3,1<<0},                              // sevseg9: 2 разряда (hour)
-  {3,1<<1},{3,1<<2},                              // sevseg10: 2 разряда (min)
-
+  {1,1<<6},{1,1<<7},{2,1<<0},{2,1<<1},{2,1<<2},
+  {2,1<<3},{2,1<<4},{2,1<<5},{2,1<<6},{2,1<<7},
+  {3,1<<0},{3,1<<1},{3,1<<2},
   // Last: 26-38
-  {3,1<<3},{3,1<<4},{3,1<<5},                    // sevseg11: 3 разряда (month)
-  {3,1<<6},{3,1<<7},                              // sevseg12: 2 разряда (day)
-  {4,1<<0},{4,1<<1},{4,1<<2},{4,1<<3},           // sevseg13: 4 разряда (year)
-  {4,1<<4},{4,1<<5},                              // sevseg14: 2 разряда (hour)
-  {4,1<<6},{4,1<<7},                              // sevseg15: 2 разряда (min)
+  {3,1<<3},{3,1<<4},{3,1<<5},{3,1<<6},{3,1<<7},
+  {4,1<<0},{4,1<<1},{4,1<<2},{4,1<<3},{4,1<<4},
+  {4,1<<5},{4,1<<6},{4,1<<7}
 };
 
-/* Вывод 8 регистров в 74HC595 */
-void latchAll(const byte* data) {
+/* ==================== Constructor ==================== */
+TimeCircuits::TimeCircuits() 
+  : curDig(0), tDig(0), tBlink(0), tMin(0), blinkTick(false), jumpLock(false) {
+  memset(buf, D_BLANK, sizeof(buf));
+}
+
+/* ==================== Hardware Functions ==================== */
+void TimeCircuits::latchAll(const byte* data) {
   digitalWrite(LATCH_PIN, LOW);
   for (int8_t i = SR_CNT-1; i >= 0; --i) {
     shiftOut(DATA_PIN, CLOCK_PIN, MSBFIRST, data[i]);
@@ -156,107 +82,95 @@ void latchAll(const byte* data) {
   digitalWrite(LATCH_PIN, HIGH);
 }
 
-/* Показываем разряд idx - один из 39 */
-void showDigit(byte idx) {
+void TimeCircuits::showDigit(byte idx) {
   static const byte CLR[SR_CNT] = {0};
   byte sr[SR_CNT] = {0};
-
-  // Сегменты - sr1 (0)
+  
   byte sym = buf[idx];
-  if (sym >= sizeof(SEG_PAT)) sym = D_BLANK; // ИЗМЕНЕНО: проверка размера массива
+  if (sym >= sizeof(SEG_PAT)) sym = D_BLANK;
   sr[0] = SEG_PAT[sym];
-
-  // COM - один активный бит в одном из sr2..sr7, по таблице
+  
   Sel sel;
   memcpy_P(&sel, &SEL[idx], sizeof(Sel));
   sr[1 + sel.srIdx] = sel.bitMask;
-
+  
   latchAll(sr);
   delayMicroseconds(DIGIT_US);
   latchAll(CLR);
 }
 
-void put2(byte off, int value) {
+/* ==================== Buffer Fill Functions ==================== */
+void TimeCircuits::put2(byte off, int value) {
   buf[off] = (value / 10) % 10;
   buf[off + 1] = value % 10;
 }
 
-void put4(byte off, int value) {
+void TimeCircuits::put4(byte off, int value) {
   buf[off] = (value / 1000) % 10;
   buf[off + 1] = (value / 100) % 10;
   buf[off + 2] = (value / 10) % 10;
   buf[off + 3] = value % 10;
 }
 
-/* ДОБАВЛЕНО: Функция для вывода 3 букв месяца */
-void putMonth(byte off, int month) {
+void TimeCircuits::putMonth(byte off, int month) {
   if (month < 1 || month > 12) {
     buf[off] = buf[off+1] = buf[off+2] = D_MINUS;
     return;
   }
-  buf[off]   = MONTH_LETTERS[month-1][0];
+  buf[off] = MONTH_LETTERS[month-1][0];
   buf[off+1] = MONTH_LETTERS[month-1][1];
   buf[off+2] = MONTH_LETTERS[month-1][2];
 }
 
-void fillDash(byte from, byte count) {
+void TimeCircuits::fillDash(byte from, byte count) {
   for (byte i = 0; i < count; i++) buf[from + i] = D_MINUS;
 }
 
-void fillBlank(byte from, byte count) {
-  for (byte i = 0; i < count; i++) buf[from + i] = D_BLANK;
-}
-
-/* ИЗМЕНЕНО: Буфер для Destination Time (теперь 13 разрядов: 0-12) */
-void toBufferDest(const DateTime& dt) {
+/* ==================== DateTime to Buffer ==================== */
+void TimeCircuits::toBufferDest(const DateTime& dt) {
   if (!dt.valid) {
-    fillDash(0, 13); // ИЗМЕНЕНО: было 14, стало 13
+    fillDash(0, 13);
     return;
   }
-  putMonth(0, dt.m);    // 3 разряда: буквы месяца
-  put2(3, dt.d);         // 2 разряда: день
-  put4(5, dt.y);         // 4 разряда: год
-  int h12; bool pm; to12h(dt.h, h12, pm);
-  put2(9, h12);          // 2 разряда: час
-  put2(11, dt.min);      // 2 разряда: минута
+  putMonth(0, dt.m);
+  put2(3, dt.d);
+  put4(5, dt.y);
+  int h12; bool pm;
+  convertTo12Hour(dt.h, h12, pm);
+  put2(9, h12);
+  put2(11, dt.min);
 }
 
-/* ИЗМЕНЕНО: Буфер для Present Time (теперь 13 разрядов: 13-25) */
-void toBufferPres(const DateTime& dt) {
+void TimeCircuits::toBufferPres(const DateTime& dt) {
   if (!dt.valid) {
-    fillDash(13, 13); // ИЗМЕНЕНО: было 14, стало 13
+    fillDash(13, 13);
     return;
   }
-  putMonth(13, dt.m);    // 3 разряда: буквы месяца
-  put2(16, dt.d);        // 2 разряда: день
-  put4(18, dt.y);        // 4 разряда: год
-  int h12; bool pm; to12h(dt.h, h12, pm);
-  put2(22, h12);         // 2 разряда: час
-  put2(24, dt.min);      // 2 разряда: минута
+  putMonth(13, dt.m);
+  put2(16, dt.d);
+  put4(18, dt.y);
+  int h12; bool pm;
+  convertTo12Hour(dt.h, h12, pm);
+  put2(22, h12);
+  put2(24, dt.min);
 }
 
-/* ИЗМЕНЕНО: Буфер для Last Time (теперь 13 разрядов: 26-38) */
-void toBufferLast(const DateTime& dt) {
+void TimeCircuits::toBufferLast(const DateTime& dt) {
   if (!dt.valid) {
-    fillDash(26, 13); // ИЗМЕНЕНО: было 14, стало 13
+    fillDash(26, 13);
     return;
   }
-  putMonth(26, dt.m);    // 3 разряда: буквы месяца
-  put2(29, dt.d);        // 2 разряда: день
-  put4(31, dt.y);        // 4 разряда: год
-  int h12; bool pm; to12h(dt.h, h12, pm);
-  put2(35, h12);         // 2 разряда: час
-  put2(37, dt.min);      // 2 разряда: минута
+  putMonth(26, dt.m);
+  put2(29, dt.d);
+  put4(31, dt.y);
+  int h12; bool pm;
+  convertTo12Hour(dt.h, h12, pm);
+  put2(35, h12);
+  put2(37, dt.min);
 }
 
-void refreshAll() {
-  toBufferDest(destT);
-  toBufferPres(presT);
-  toBufferLast(lastT);
-}
-
-// Управление LED индикаторами
-void setLeds(const DateTime& dt, int pinAM, int pinPM, int pinS1, int pinS2, bool blinkSecs) {
+/* ==================== LED Control ==================== */
+void TimeCircuits::setLeds(const DateTime& dt, int pinAM, int pinPM, int pinS1, int pinS2, bool blinkSecs) {
   if (!dt.valid) {
     digitalWrite(pinAM, LOW);
     digitalWrite(pinPM, LOW);
@@ -264,9 +178,11 @@ void setLeds(const DateTime& dt, int pinAM, int pinPM, int pinS1, int pinS2, boo
     digitalWrite(pinS2, LOW);
     return;
   }
+  
   bool pm = (dt.h >= 12);
   digitalWrite(pinAM, pm ? LOW : HIGH);
   digitalWrite(pinPM, pm ? HIGH : LOW);
+  
   if (blinkSecs) {
     digitalWrite(pinS1, blinkTick ? HIGH : LOW);
     digitalWrite(pinS2, blinkTick ? HIGH : LOW);
@@ -276,50 +192,9 @@ void setLeds(const DateTime& dt, int pinAM, int pinPM, int pinS1, int pinS2, boo
   }
 }
 
-// Считывание температуры с NTC
-float getT() {
-  int raw = analogRead(NTC_PIN);
-  float tempC = 1 / (log(1 / (1023. / raw - 1)) / BETA_THERM + 1.0 / 298.15) - 273.15;
-  return tempC;
-}
-
-void initTimeCircuits() {
-//   Serial.begin(115200);
-  pinMode(DATA_PIN, OUTPUT);
-  pinMode(LATCH_PIN, OUTPUT);
-  pinMode(CLOCK_PIN, OUTPUT);
-
-  const byte ledPins[] = {
-    LED_AM_DEST, LED_PM_DEST, LED_SEC1_DEST, LED_SEC2_DEST,
-    LED_AM_PRES, LED_PM_PRES, LED_SEC1_PRES, LED_SEC2_PRES,
-    LED_AM_LAST, LED_PM_LAST, LED_SEC1_LAST, LED_SEC2_LAST
-  };
-  for (byte i = 0; i < sizeof(ledPins); i++) pinMode(ledPins[i], OUTPUT);
-
-  refreshAll();
-  Serial.println(F("Time Circuits Ready. Month letters on 7-seg. Press D/P/L to set time."));
-}
-
-void runTimeCircuitsLoop() {
-  unsigned long us = micros();
-  if (us - tDig >= DIGIT_US) {
-    tDig = us;
-    showDigit(curDig);
-    if (++curDig >= DIGITS_TOTAL) curDig = 0;
-  }
-
+/* ==================== Present Time Update ==================== */
+void TimeCircuits::updatePresentTime() {
   unsigned long ms = millis();
-
-  if (ms - tBlink >= BLINK_MS) {
-    tBlink = ms;
-    blinkTick = !blinkTick;
-    if (!destT.valid || !presT.valid || !lastT.valid || mode != NONE) refreshAll();
-  }
-
-  setLeds(destT, LED_AM_DEST, LED_PM_DEST, LED_SEC1_DEST, LED_SEC2_DEST, false);
-  setLeds(presT, LED_AM_PRES, LED_PM_PRES, LED_SEC1_PRES, LED_SEC2_PRES, true);
-  setLeds(lastT, LED_AM_LAST, LED_PM_LAST, LED_SEC1_LAST, LED_SEC2_LAST, false);
-
   if (presT.valid && ms - tMin >= 60000UL) {
     tMin = ms;
     presT.min++;
@@ -327,118 +202,125 @@ void runTimeCircuitsLoop() {
       presT.min = 0;
       presT.h = (presT.h + 1) % 24;
     }
-    refreshAll();
+    refresh();
   }
+}
 
-  float tC = getT();
-  if (tC >= 58.0 && !jumpLock && destT.valid && presT.valid) {
-    lastT = presT;
-    presT = destT;
-    tMin = ms;
-    refreshAll();
-    jumpLock = true;
-    Serial.println(F("Go To The Future"));
-    Serial.print(F("Destination Time is: "));
-    Serial.println(destT.toText());
-    Serial.print(F("Present Time is: "));
-    Serial.println(presT.toText());
-    Serial.print(F("Last Departed Time is: "));
-    Serial.println(lastT.toText());
-  }
-  if (tC < 34.0) jumpLock = false;
-
-  char k = kpd.getKey();
-
-  if (!k) return;
-
-  if (ms - ttKey < DEBOUNCE_MS && k == lastKeyPressed2) return;
-  ttKey = ms;
-  lastKeyPressed2 = k;
-
-  if (mode == NONE) {
-    if (k == 'D') {
-      mode = SET_DEST;
-      inDigits = "";
-      Serial.print(F("Enter Destination Time: "));
-      return;
-    }
-    if (k == 'P') {
-      mode = SET_PRES;
-      inDigits = "";
-      Serial.print(F("Enter Present Time: "));
-      return;
-    }
-    if (k == 'L') {
-      mode = SET_LAST;
-      inDigits = "";
-      Serial.print(F("Enter Last Time Departed: "));
-      return;
-    }
-    if (k == '#') {
-      inDigits = "";
-      Serial.print(F("Temp:"));
-      Serial.println(tC);
-      return;
-    }
-    return;
-  }
-
-  if (k >= '0' && k <= '9' && inDigits.length() < 12) {
-    inDigits += k;
-    Serial.print(k);
-    return;
-  }
-
-  if (k == '#') {
-    inDigits = "";
-    Serial.println(F("\nOut"));
-    mode = NONE;
-    return;
-  }
-
-  if (k == 'R') {
-    inDigits = "";
-    Serial.println(F("\nReset"));
-    if (mode == SET_DEST)
-      Serial.print(F("Enter Destination Time: "));
-    else if (mode == SET_PRES)
-      Serial.print(F("Enter Present Time: "));
-    else
-      Serial.print(F("Enter Last Time Departed: "));
-    return;
-  }
-
-  if (k != 'E')
-    return;
-
-  if (inDigits.length() != 12) {
-    Serial.println(F("\nError: Need 12 digits"));
-    mode = NONE;
-    return;
-  }
-
-  DateTime dt = parse12(inDigits);
-  if (!dt.valid) {
-    Serial.println(F("\nError: Invalid date"));
-    mode = NONE;
-    return;
-  }
-
-  if (mode == SET_DEST) {
-    destT = dt;
-    Serial.print(F("\r\nThe destination date has been set: "));
-  }
-  else if (mode == SET_PRES) {
-    presT = dt;
-    tMin = ms;
-    Serial.print(F("\r\nThe present date has been set: "));
-  }
-  else {
-    lastT = dt;
-    Serial.print(F("\r\nThe last date has been set: "));
-  }
-
-  refreshAll();
-  mode = NONE;
+/* ==================== Public Methods - Setters ==================== */
+void TimeCircuits::setDestTime(const DateTime& dt) {
+  destT = dt;
+  refresh();
+  Serial.print(F("Destination Time set: "));
   Serial.println(dt.toText());
 }
+
+void TimeCircuits::clearDestTime() {
+  destT = DateTime();
+  refresh();
+  Serial.println(F("Destination Time cleared"));
+}
+
+void TimeCircuits::setPresTime(const DateTime& dt) {
+  presT = dt;
+  tMin = millis();
+  refresh();
+  Serial.print(F("Present Time set: "));
+  Serial.println(dt.toText());
+}
+
+void TimeCircuits::clearPresTime() {
+  presT = DateTime();
+  refresh();
+  Serial.println(F("Present Time cleared"));
+}
+
+void TimeCircuits::setLastTime(const DateTime& dt) {
+  lastT = dt;
+  refresh();
+  Serial.print(F("Last Time Departed set: "));
+  Serial.println(dt.toText());
+}
+
+void TimeCircuits::clearLastTime() {
+  lastT = DateTime();
+  refresh();
+  Serial.println(F("Last Time Departed cleared"));
+}
+
+/* ==================== Time Travel ==================== */
+void TimeCircuits::timeTravel() {
+  if (!canTimeTravel()) {
+    Serial.println(F("Cannot travel: invalid times or jump locked"));
+    return;
+  }
+  
+  lastT = presT;
+  presT = destT;
+  tMin = millis();
+  jumpLock = true;
+  refresh();
+  
+  Serial.println(F("⚡ GO TO THE FUTURE ⚡"));
+  Serial.print(F("Destination Time: "));
+  Serial.println(destT.toText());
+  Serial.print(F("Present Time: "));
+  Serial.println(presT.toText());
+  Serial.print(F("Last Departed Time: "));
+  Serial.println(lastT.toText());
+}
+
+/* ==================== Display Refresh ==================== */
+void TimeCircuits::refresh() {
+  toBufferDest(destT);
+  toBufferPres(presT);
+  toBufferLast(lastT);
+}
+
+/* ==================== Initialization ==================== */
+void TimeCircuits::init() {
+  pinMode(DATA_PIN, OUTPUT);
+  pinMode(LATCH_PIN, OUTPUT);
+  pinMode(CLOCK_PIN, OUTPUT);
+  
+  const byte ledPins[] = {
+    LED_AM_DEST, LED_PM_DEST, LED_SEC1_DEST, LED_SEC2_DEST,
+    LED_AM_PRES, LED_PM_PRES, LED_SEC1_PRES, LED_SEC2_PRES,
+    LED_AM_LAST, LED_PM_LAST, LED_SEC1_LAST, LED_SEC2_LAST
+  };
+  
+  for (byte i = 0; i < sizeof(ledPins); i++) {
+    pinMode(ledPins[i], OUTPUT);
+  }
+  
+  refresh();
+  Serial.println(F("⏰ Time Circuits Ready"));
+}
+
+/* ==================== Main Update Loop ==================== */
+void TimeCircuits::update() {
+  // Мультиплексирование дисплея
+  unsigned long us = micros();
+  if (us - tDig >= DIGIT_US) {
+    tDig = us;
+    showDigit(curDig);
+    if (++curDig >= 39) curDig = 0;
+  }
+  
+  // Мигание секундных точек
+  unsigned long ms = millis();
+  if (ms - tBlink >= BLINK_MS) {
+    tBlink = ms;
+    blinkTick = !blinkTick;
+  }
+  
+  // Обновление LED индикаторов
+  setLeds(destT, LED_AM_DEST, LED_PM_DEST, LED_SEC1_DEST, LED_SEC2_DEST, false);
+  setLeds(presT, LED_AM_PRES, LED_PM_PRES, LED_SEC1_PRES, LED_SEC2_PRES, true);
+  setLeds(lastT, LED_AM_LAST, LED_PM_LAST, LED_SEC1_LAST, LED_SEC2_LAST, false);
+  
+  // Обновление времени Present Time
+  updatePresentTime();
+}
+
+// Глобальный экземпляр
+TimeCircuits timeCircuits;

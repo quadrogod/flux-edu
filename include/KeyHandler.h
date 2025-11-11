@@ -3,8 +3,7 @@
 
 #include <Keypad.h>
 
-extern Keypad kpd;
-
+void initKeypad();
 void handleKey();
 
 #endif

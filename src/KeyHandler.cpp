@@ -5,6 +5,7 @@
 #include "Animations.h"
 #include "KeyHandler.h"
 #include "IRHandler.h"
+#include "TimeCircuits.h"
 
 // KEYPAD_AZ_DELIVERY Keypad pins (10 pin)
 // NA C1 C2 C3 C4 R1 R2 R3 R4 NA
@@ -57,7 +58,155 @@ char keys[ROWS][COLS] = {
 
 Keypad kpd(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
+// Режимы ввода
+enum InputMode { MODE_NONE, MODE_SET_DEST, MODE_SET_PRES, MODE_SET_LAST };
+InputMode inputMode = MODE_NONE;
+String inDigits = "";
 char lastKeyPressed = '\0';
+
+void initKeypad() {
+  Serial.println(F("Keypad Ready"));
+}
+
+void handleDateInput(char key) {
+  if (key >= '0' && key <= '9' && inDigits.length() < 12) {
+    inDigits += key;
+    Serial.print(key);
+    return;
+  }
+  
+  if (key == '#') {
+    inDigits = "";
+    Serial.println(F("\nInput cancelled"));
+    inputMode = MODE_NONE;
+    return;
+  }
+  
+  if (key == 'R') {
+    inDigits = "";
+    Serial.println(F("\nReset"));
+    return;
+  }
+  
+  if (key == 'E') {
+    if (inDigits.length() != 12) {
+      Serial.println(F("\nError: Need 12 digits (MMDDYYYYHHmm)"));
+      inputMode = MODE_NONE;
+      inDigits = "";
+      return;
+    }
+    
+    DateTime dt = parseDateTime(inDigits);
+    if (!dt.valid) {
+      Serial.println(F("\nError: Invalid date"));
+      inputMode = MODE_NONE;
+      inDigits = "";
+      return;
+    }
+    
+    // Использование методов класса TimeCircuits
+    if (inputMode == MODE_SET_DEST) {
+      timeCircuits.setDestTime(dt);
+    } else if (inputMode == MODE_SET_PRES) {
+      timeCircuits.setPresTime(dt);
+    } else {
+      timeCircuits.setLastTime(dt);
+    }
+    
+    inputMode = MODE_NONE;
+    inDigits = "";
+    return;
+  }
+}
+
+void handleNormalMode(char k) {
+
+    switch (k)
+    {
+        case '1':
+            resetModes();
+            setTimeTravel();
+            Serial.println(F("Time Travel activated"));
+            break;
+            
+        case '2':
+            resetModes();
+            setSmoothChase();
+            Serial.println(F("Smooth Chase activated"));
+            break;
+            
+        case '3':
+            resetModes();
+            setThirtyChase();
+            Serial.println(F("Thirty Chase activated"));
+            break;
+
+        case '4':
+            resetModes();
+            setMovieChase();
+            Serial.println(F("Movie Chase activated"));
+            break;
+          
+        case '5':
+            resetModes();
+            setMovieChaseSimple();
+            Serial.println(F("Movie Chase Simple activated"));
+            break;
+
+        case '6':
+            resetModes();
+            setRadChase();
+            Serial.println(F("Rad Chase activated"));
+            break;
+
+        case '7':
+            resetModes();
+            setRadChase2();
+            Serial.println(F("Rad Chase 2 activated"));
+            break;
+
+        case '8':
+            resetModes();
+            setRainbowChase();
+            Serial.println(F("Rainbow activated"));
+            break;
+
+        case '9':
+            resetModes();
+            setMovieTimeTravel();
+            Serial.println(F("Movie Time Travel activated"));
+            break;
+
+        case '0':
+            resetModes();
+            setOff();
+            Serial.println(F("LEDs cleared"));
+            break;
+
+        case 'D':
+            inputMode = MODE_SET_DEST;
+            inDigits = "";
+            Serial.print(F("Enter Destination Time (MMDDYYYYHHmm): "));
+            break;
+        
+        case 'P':
+            inputMode = MODE_SET_PRES;
+            inDigits = "";
+            Serial.print(F("Enter Present Time (MMDDYYYYHHmm): "));
+            break;
+
+        case 'L':
+            inputMode = MODE_SET_LAST;
+            inDigits = "";
+            Serial.print(F("Enter Last Time Departed (MMDDYYYYHHmm): "));
+            break;
+            
+        default:
+            Serial.println(F("Unknown command"));
+            Serial.println(k);
+            break;
+    }
+}
 
 void handleKey() {
 
@@ -71,64 +220,10 @@ void handleKey() {
     tKey = ms;
     lastKeyPressed = k;
 
-    resetModes();
-
-    switch (k)
-    {
-        case '1':
-            setTimeTravel();
-            Serial.println(F("Time Travel activated"));
-            break;
-            
-        case '2':
-            setSmoothChase();
-            Serial.println(F("Smooth Chase activated"));
-            break;
-            
-        case '3':
-            setThirtyChase();
-            Serial.println(F("Thirty Chase activated"));
-            break;
-
-        case '4':
-            setMovieChase();
-            Serial.println(F("Movie Chase activated"));
-            break;
-          
-        case '5':
-            setMovieChaseSimple();
-            Serial.println(F("Movie Chase Simple activated"));
-            break;
-
-        case '6':
-            setRadChase();
-            Serial.println(F("Rad Chase activated"));
-            break;
-
-        case '7':
-            setRadChase2();
-            Serial.println(F("Rad Chase 2 activated"));
-            break;
-
-        case '8':
-            setRainbowChase();
-            Serial.println(F("Rainbow activated"));
-            break;
-
-        case '9':
-            setMovieTimeTravel();
-            Serial.println(F("Movie Time Travel activated"));
-            break;
-
-        case '0':
-            setOff();
-            Serial.println(F("LEDs cleared"));
-            break;
-            
-        default:
-            Serial.println(F("Unknown command"));
-            Serial.println(k);
-            break;
+    if (inputMode == MODE_NONE) {
+        handleNormalMode(k);
+    } else {
+        handleDateInput(k);
     }
 
 }

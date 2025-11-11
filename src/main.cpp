@@ -8,6 +8,7 @@
 #include "Globals.h"
 #include "IRHandler.h"
 #include "KeyHandler.h"
+#include "TemperatureHandler.h"
 #include "SerialHandler.h"
 #include "Animations.h"
 #include "TimeCircuits.h"
@@ -38,7 +39,11 @@ void setup() {
     FastLED.clear();
     FastLED.show();
 
-    radChase2 = true; // initial demo effect
+    timeCircuits.init();
+    initKeypad();
+    initTemperatureSensor();
+
+    // radChase2 = true; // initial demo effect
     Serial.println(F("Setup Completed.\n"));
 
     // запускаем свет
@@ -47,13 +52,13 @@ void setup() {
     resetModes();       
     // timeTravel = true; delaySpeed = 113;
 
-    initTimeCircuits();
 }
 
 void loop() {
     // handleIRRemote();
-    // handleKey();
+    handleKey();
     handleSerial();
     handleAnimations();
-    runTimeCircuitsLoop();
+    handleTemperatureSensor();
+    timeCircuits.update(); 
 }
