@@ -55,7 +55,7 @@ void setup() {
 }
 
 void loop() {
-    // handleIRRemote();
+    handleIRRemote();
     handleKey();
     handleSerial();
     handleAnimations();
