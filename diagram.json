@@ -62,275 +62,282 @@
     {
       "type": "wokwi-7segment",
       "id": "sevseg1",
-      "top": 447.42,
-      "left": 1200.84,
+      "top": 450,
+      "left": 700,
       "attrs": { "digits": "3", "color": "red", "common": "anode" }
     },
     {
       "type": "wokwi-7segment",
       "id": "sevseg2",
       "top": 450,
-      "left": 1450,
+      "left": 900,
       "attrs": { "digits": "2", "color": "red", "common": "anode" }
     },
     {
       "type": "wokwi-7segment",
       "id": "sevseg3",
       "top": 450,
-      "left": 1650,
+      "left": 1050,
       "attrs": { "digits": "4", "color": "red", "common": "anode" }
-    },
-    {
-      "type": "wokwi-7segment",
-      "id": "sevseg4",
-      "top": 450,
-      "left": 1900,
-      "attrs": { "digits": "2", "color": "red", "common": "anode" }
-    },
-    {
-      "type": "wokwi-7segment",
-      "id": "sevseg5",
-      "top": 450,
-      "left": 2100,
-      "attrs": { "digits": "2", "color": "red", "common": "anode" }
-    },
-    {
-      "type": "wokwi-7segment",
-      "id": "sevseg6",
-      "top": 649.02,
-      "left": 1201.12,
-      "attrs": { "digits": "3", "color": "#00ff00", "common": "anode" }
-    },
-    {
-      "type": "wokwi-7segment",
-      "id": "sevseg7",
-      "top": 649.02,
-      "left": 1450.16,
-      "attrs": { "digits": "2", "color": "#00ff00", "common": "anode" }
-    },
-    {
-      "type": "wokwi-7segment",
-      "id": "sevseg8",
-      "top": 650,
-      "left": 1650,
-      "attrs": { "digits": "4", "color": "#00ff00", "common": "anode" }
-    },
-    {
-      "type": "wokwi-7segment",
-      "id": "sevseg9",
-      "top": 650,
-      "left": 1900,
-      "attrs": { "digits": "2", "color": "#00ff00", "common": "anode" }
-    },
-    {
-      "type": "wokwi-7segment",
-      "id": "sevseg10",
-      "top": 650,
-      "left": 2100,
-      "attrs": { "digits": "2", "color": "#00ff00", "common": "anode" }
-    },
-    {
-      "type": "wokwi-7segment",
-      "id": "sevseg11",
-      "top": 850,
-      "left": 1200,
-      "attrs": { "digits": "3", "color": "yellow", "common": "anode" }
-    },
-    {
-      "type": "wokwi-7segment",
-      "id": "sevseg12",
-      "top": 850,
-      "left": 1450,
-      "attrs": { "digits": "2", "color": "yellow", "common": "anode" }
-    },
-    {
-      "type": "wokwi-7segment",
-      "id": "sevseg13",
-      "top": 850,
-      "left": 1650,
-      "attrs": { "digits": "4", "color": "yellow", "common": "anode" }
-    },
-    {
-      "type": "wokwi-7segment",
-      "id": "sevseg14",
-      "top": 850,
-      "left": 1900,
-      "attrs": { "digits": "2", "color": "yellow", "common": "anode" }
-    },
-    {
-      "type": "wokwi-7segment",
-      "id": "sevseg15",
-      "top": 850,
-      "left": 2100,
-      "attrs": { "digits": "2", "color": "yellow", "common": "anode" }
     },
     {
       "type": "wokwi-led",
       "id": "led_am_dest",
       "top": 430,
-      "left": 1800,
+      "left": 1250,
       "attrs": { "color": "orange" }
     },
     {
       "type": "wokwi-resistor",
       "id": "r1",
       "top": 440,
-      "left": 1840,
+      "left": 1300,
       "attrs": { "value": "220" }
     },
     {
       "type": "wokwi-led",
       "id": "led_pm_dest",
       "top": 470,
-      "left": 1800,
+      "left": 1250,
       "attrs": { "color": "orange" }
     },
     {
       "type": "wokwi-resistor",
       "id": "r2",
       "top": 480,
-      "left": 1840,
+      "left": 1300,
       "attrs": { "value": "220" }
     },
+    {
+      "type": "wokwi-7segment",
+      "id": "sevseg4",
+      "top": 450,
+      "left": 1380,
+      "attrs": { "digits": "2", "color": "red", "common": "anode" }
+    },
+  
     {
       "type": "wokwi-led",
       "id": "led_sec1_dest",
       "top": 430,
-      "left": 2000,
+      "left": 1480,
       "attrs": { "color": "orange" }
     },
     {
       "type": "wokwi-resistor",
       "id": "r3",
       "top": 440,
-      "left": 2040,
+      "left": 1530,
       "attrs": { "value": "220" }
     },
     {
       "type": "wokwi-led",
       "id": "led_sec2_dest",
       "top": 470,
-      "left": 2000,
+      "left":  1480,
       "attrs": { "color": "orange" }
     },
     {
       "type": "wokwi-resistor",
       "id": "r4",
       "top": 480,
-      "left": 2040,
+      "left": 1530,
       "attrs": { "value": "220" }
+    },
+
+    {
+      "type": "wokwi-7segment",
+      "id": "sevseg5",
+      "top": 450,
+      "left": 1590,
+      "attrs": { "digits": "2", "color": "red", "common": "anode" }
+    },
+
+
+
+    
+    {
+      "type": "wokwi-7segment",
+      "id": "sevseg6",
+      "top": 650,
+      "left": 700,
+      "attrs": { "digits": "3", "color": "#00ff00", "common": "anode" }
+    },
+    {
+      "type": "wokwi-7segment",
+      "id": "sevseg7",
+      "top": 650,
+      "left": 900,
+      "attrs": { "digits": "2", "color": "#00ff00", "common": "anode" }
+    },
+    {
+      "type": "wokwi-7segment",
+      "id": "sevseg8",
+      "top": 650,
+      "left": 1050,
+      "attrs": { "digits": "4", "color": "#00ff00", "common": "anode" }
     },
     {
       "type": "wokwi-led",
       "id": "led_am_pres",
       "top": 630,
-      "left": 1800,
+      "left": 1250,
       "attrs": { "color": "green" }
     },
     {
       "type": "wokwi-resistor",
       "id": "r5",
       "top": 640,
-      "left": 1840,
+      "left": 1300,
       "attrs": { "value": "220" }
     },
     {
       "type": "wokwi-led",
       "id": "led_pm_pres",
       "top": 670,
-      "left": 1800,
+      "left": 1250,
       "attrs": { "color": "green" }
     },
     {
       "type": "wokwi-resistor",
       "id": "r6",
       "top": 680,
-      "left": 1840,
+      "left": 1300,
       "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-7segment",
+      "id": "sevseg9",
+      "top": 650,
+      "left": 1380,
+      "attrs": { "digits": "2", "color": "#00ff00", "common": "anode" }
     },
     {
       "type": "wokwi-led",
       "id": "led_sec1_pres",
       "top": 630,
-      "left": 2000,
+      "left": 1480,
       "attrs": { "color": "green" }
     },
     {
       "type": "wokwi-resistor",
       "id": "r7",
       "top": 640,
-      "left": 2040,
+      "left": 1530,
       "attrs": { "value": "220" }
     },
     {
       "type": "wokwi-led",
       "id": "led_sec2_pres",
       "top": 670,
-      "left": 2000,
+      "left": 1480,
       "attrs": { "color": "green" }
     },
     {
       "type": "wokwi-resistor",
       "id": "r8",
       "top": 680,
-      "left": 2040,
+      "left": 1530,
       "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-7segment",
+      "id": "sevseg10",
+      "top": 650,
+      "left": 1590,
+      "attrs": { "digits": "2", "color": "#00ff00", "common": "anode" }
+    },
+
+    {
+      "type": "wokwi-7segment",
+      "id": "sevseg11",
+      "top": 850,
+      "left": 700,
+      "attrs": { "digits": "3", "color": "yellow", "common": "anode" }
+    },
+    {
+      "type": "wokwi-7segment",
+      "id": "sevseg12",
+      "top": 850,
+      "left": 900,
+      "attrs": { "digits": "2", "color": "yellow", "common": "anode" }
+    },
+    {
+      "type": "wokwi-7segment",
+      "id": "sevseg13",
+      "top": 850,
+      "left": 1050,
+      "attrs": { "digits": "4", "color": "yellow", "common": "anode" }
     },
     {
       "type": "wokwi-led",
       "id": "led_am_last",
       "top": 830,
-      "left": 1800,
+      "left": 1250,
       "attrs": { "color": "yellow" }
     },
     {
       "type": "wokwi-resistor",
       "id": "r9",
       "top": 840,
-      "left": 1840,
+      "left": 1300,
       "attrs": { "value": "220" }
     },
     {
       "type": "wokwi-led",
       "id": "led_pm_last",
       "top": 870,
-      "left": 1800,
+      "left": 1250,
       "attrs": { "color": "yellow" }
     },
     {
       "type": "wokwi-resistor",
       "id": "r10",
       "top": 880,
-      "left": 1840,
+      "left": 1300,
       "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-7segment",
+      "id": "sevseg14",
+      "top": 850,
+      "left": 1380,
+      "attrs": { "digits": "2", "color": "yellow", "common": "anode" }
     },
     {
       "type": "wokwi-led",
       "id": "led_sec1_last",
       "top": 830,
-      "left": 2000,
+      "left": 1480,
       "attrs": { "color": "yellow" }
     },
     {
       "type": "wokwi-resistor",
       "id": "r11",
       "top": 840,
-      "left": 2040,
+      "left": 1530,
       "attrs": { "value": "220" }
     },
     {
       "type": "wokwi-led",
       "id": "led_sec2_last",
       "top": 870,
-      "left": 2000,
+      "left": 1480,
       "attrs": { "color": "yellow" }
     },
     {
       "type": "wokwi-resistor",
       "id": "r12",
       "top": 880,
-      "left": 2040,
+      "left": 1530,
       "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-7segment",
+      "id": "sevseg15",
+      "top": 850,
+      "left": 1590,
+      "attrs": { "digits": "2", "color": "yellow", "common": "anode" }
     },
     {
       "type": "wokwi-ntc-temperature-sensor",

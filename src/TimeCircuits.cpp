@@ -192,17 +192,82 @@ void TimeCircuits::setLeds(const DateTime& dt, int pinAM, int pinPM, int pinS1, 
   }
 }
 
+/* ==================== Time Increment with Full Date Logic ==================== */
+void TimeCircuits::incrementTime(DateTime& dt) {
+  if (!dt.valid) return;
+  
+  // Увеличиваем минуты
+  dt.min++;
+  
+  // Проверка переполнения минут -> час
+  if (dt.min >= 60) {
+    dt.min = 0;
+    dt.h++;
+    
+    // Проверка переполнения часов -> день
+    if (dt.h >= 24) {
+      dt.h = 0;
+      dt.d++;
+      
+      // Получаем количество дней в текущем месяце
+      int daysInMonth = getDaysInMonth(dt.m, dt.y);
+      
+      // Проверка переполнения дней -> месяц
+      if (dt.d > daysInMonth) {
+        dt.d = 1;
+        dt.m++;
+        
+        // Проверка переполнения месяцев -> год
+        if (dt.m > 12) {
+          dt.m = 1;
+          dt.y++;
+          
+          // Защита от переполнения года (максимум 9999)
+          if (dt.y > 9999) {
+            dt.y = 9999;
+            dt.m = 12;
+            dt.d = 31;
+            dt.h = 23;
+            dt.min = 59;
+          }
+        }
+      }
+    }
+  }
+}
+
+/* ==================== Get Days in Month (учитывает високосные годы) ==================== */
+int TimeCircuits::getDaysInMonth(int month, int year) {
+  const int daysInMonth[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+  
+  if (month < 1 || month > 12) return 31; // Защита от ошибок
+  
+  int days = daysInMonth[month - 1];
+  
+  // Проверка на високосный год для февраля
+  if (month == 2 && isLeapYear(year)) {
+    days = 29;
+  }
+  
+  return days;
+}
+
 /* ==================== Present Time Update ==================== */
 void TimeCircuits::updatePresentTime() {
+  if (!presT.valid) return;
+  
   unsigned long ms = millis();
-  if (presT.valid && ms - tMin >= 60000UL) {
+  
+  // Каждую минуту (60 секунд)
+  if (ms - tMin >= 60000UL) {
     tMin = ms;
-    presT.min++;
-    if (presT.min == 60) {
-      presT.min = 0;
-      presT.h = (presT.h + 1) % 24;
-    }
+    // Используем функцию инкремента с полной логикой даты
+    incrementTime(presT);
     refresh();
+    
+    // Выводим в Serial для отладки (опционально, можно закомментировать)
+    // Serial.print(F("⏰ Present Time updated: "));
+    // Serial.println(presT.toText());
   }
 }
 

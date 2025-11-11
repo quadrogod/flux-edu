@@ -32,6 +32,8 @@ private:
   void toBufferLast(const DateTime& dt);
   void setLeds(const DateTime& dt, int pinAM, int pinPM, int pinS1, int pinS2, bool blinkSecs);
   void updatePresentTime();
+  void incrementTime(DateTime& dt);
+  int getDaysInMonth(int month, int year);
 
 public:
   TimeCircuits();
