@@ -27,6 +27,7 @@ private:
   #ifdef USE_RTC_DS3231
     RTC_DS3231 rtc;  
     uint8_t lastRTCMinute; // для отслеживания минут модуля
+    bool useRTCForDate; // использовать RTC для полной даты (только в диапазоне 2000 - 2099 годов)
   #endif
   
   // Внутренние методы

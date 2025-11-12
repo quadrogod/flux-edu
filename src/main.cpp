@@ -43,15 +43,12 @@ void setup() {
     initKeypad();
     initTemperatureSensor();
 
-    // radChase2 = true; // initial demo effect
     Serial.println(F("Setup Completed.\n"));
 
     // запускаем свет
-    // smoothChase = true; delaySpeed = 80; 
-    // Serial.println(F("Start Time Travel Mode")); 
-    resetModes();       
-    // timeTravel = true; delaySpeed = 113;
-
+    resetModes();   
+    setMovieChaseSimple();
+    Serial.println(F("Movie Chase Simple activated"));    
 }
 
 void loop() {

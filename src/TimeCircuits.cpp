@@ -75,7 +75,7 @@ static const Sel SEL[39] PROGMEM = {
 TimeCircuits::TimeCircuits() 
   : curDig(0), tDig(0), tBlink(0), tMin(0), blinkTick(false), jumpLock(false) 
   #ifdef USE_RTC_DS3231
-    , lastRTCMinute(255) // 255 = неинициализировано
+    , lastRTCMinute(255), useRTCForDate(false) // 255 = неинициализировано
   #endif
 {
   memset(buf, D_BLANK, sizeof(buf));
@@ -265,21 +265,53 @@ void TimeCircuits::updatePresentTime() {
   if (!presT.valid) return;
 
   #ifdef USE_RTC_DS3231
-    // ===== РЕЖИМ RTC: Используем ТОЛЬКО как таймер =====
     if (rtc.begin()) {
       DateTime rtcNow = rtc.now();
       uint8_t currentMinute = rtcNow.minute();
       
-      // Проверяем, изменилась ли минута с момента последней проверки
       if (currentMinute != lastRTCMinute) {
         lastRTCMinute = currentMinute;
         
-        // Инкрементируем НАШУ дату (может быть любой год!)
-        incrementTime(presT);
-        refresh();
+        if (useRTCForDate) {
+          // ===== РЕЖИМ ПОЛНОЙ ДАТЫ: Читаем время напрямую из RTC =====
+          presT.y = rtcNow.year();
+          presT.m = rtcNow.month();
+          presT.d = rtcNow.day();
+          presT.h = rtcNow.hour();
+          presT.min = rtcNow.minute();
+          presT.valid = true;
+          
+          // ДОБАВИТЬ: Проверка выхода за границу 2099
+          if (presT.y > 2099) {
+            // Переключение в режим таймера
+            useRTCForDate = false;
+            rtc.adjust(DateTime(2020, 1, 1, 0, 0, 0));
+            
+            Serial.println(F("Year > 2099: Switched to timer-only mode"));
+            Serial.print(F("Present Time: "));
+            Serial.println(presT.toText());
+          }
+        } else {
+          // ===== РЕЖИМ ТАЙМЕРА: Только инкремент нашей даты =====
+          incrementTime(presT);
+          
+          // ДОБАВИТЬ: Проверка входа в диапазон 2000-2099
+          if (presT.y >= 2000 && presT.y <= 2099) {
+            // Переключение в режим полной даты
+            useRTCForDate = true;
+            
+            // Синхронизация RTC с новой датой
+            DateTime rtcTime(presT.y, presT.m, presT.d, presT.h, presT.min, 0);
+            rtc.adjust(rtcTime);
+            lastRTCMinute = presT.min;
+            
+            Serial.println(F("Year 2000-2099: Switched to full date mode"));
+            Serial.print(F("RTC synchronized to: "));
+            Serial.println(presT.toText());
+          }
+        }
         
-        // Serial.print(F("Present Time (RTC tick): "));
-        // Serial.println(presT.toText());
+        refresh();
       }
       return;
     }
@@ -320,12 +352,32 @@ void TimeCircuits::setPresTime(const TCDateTime& dt) {
 
   #ifdef USE_RTC_DS3231
     if (rtc.begin()) {
-      // Синхронизируем только ТЕКУЩУЮ минуту RTC для правильного отсчёта
-      rtc.adjust(DateTime(F("Jan 01 2020"), F("00:00:00")));
-      DateTime rtcNow = rtc.now();
-      lastRTCMinute = rtcNow.minute();
-      
-      Serial.println(F("RTC timer synchronized:"));
+      // Проверяем, попадает ли дата в диапазон RTC (2000-2099)
+      if (dt.y >= 2000 && dt.y <= 2099) {
+        // ===== Дата в диапазоне: используем RTC полностью =====
+        useRTCForDate = true;
+        
+        // Устанавливаем точную дату в RTC
+        DateTime rtcTime(dt.y, dt.m, dt.d, dt.h, dt.min, 0);
+        rtc.adjust(rtcTime);
+        lastRTCMinute = dt.min;
+        
+        Serial.println(F("RTC: Full date mode (2000-2099)"));
+        Serial.print(F("Synchronized to: "));
+        Serial.println(dt.toText());
+      } else {
+        // ===== Дата вне диапазона: используем RTC только как таймер =====
+        useRTCForDate = false;
+        
+        // Устанавливаем фиксированную дату в RTC (для тиков)
+        rtc.adjust(DateTime(2020, 1, 1, 0, 0, 0));
+        DateTime rtcNow = rtc.now();
+        lastRTCMinute = rtcNow.minute();
+        
+        Serial.println(F("RTC: Timer-only mode (year < 2000 or > 2099)"));
+        Serial.print(F("Present Time: "));
+        Serial.println(dt.toText());
+      }
     }
   #endif
 

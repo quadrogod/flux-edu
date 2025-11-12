@@ -103,6 +103,8 @@ void handleDateInput(char key) {
       inDigits = "";
       return;
     }
+
+    Serial.println();
     
     // Использование методов класса TimeCircuits
     if (inputMode == MODE_SET_DEST) {
@@ -112,7 +114,7 @@ void handleDateInput(char key) {
     } else {
       timeCircuits.setLastTime(dt);
     }
-    
+
     inputMode = MODE_NONE;
     inDigits = "";
     return;
