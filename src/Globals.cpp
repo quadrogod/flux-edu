@@ -13,8 +13,8 @@ bool isDateValid(int M, int D, int Y, int h, int m) {
   return D <= dim[M-1];
 }
 
-DateTime parseDateTime(const String& s) {
-  DateTime d;
+TCDateTime parseDateTime(const String& s) {
+  TCDateTime d;
   if(s.length() != 12) return d;
   d.m   = s.substring(0,2).toInt();
   d.d   = s.substring(2,4).toInt();

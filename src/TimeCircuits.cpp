@@ -4,6 +4,10 @@
 #include "Config.h"
 #include "Globals.h"
 #include "TimeCircuits.h"
+#ifdef USE_RTC_DS3231
+  // сам модуль для установки даты использовать не буду, т.к. он ограничен 2000-м годом, буду устанавливать в нем дату, например 01.01.2020 00:00:00 и от неё считать тики модуля
+  #include <RTClib.h>
+#endif
 
 /* ==================== Segment Patterns ==================== */
 enum {D0,D1,D2,D3,D4,D5,D6,D7,D8,D9,D_MINUS,D_BLANK,
@@ -69,7 +73,11 @@ static const Sel SEL[39] PROGMEM = {
 
 /* ==================== Constructor ==================== */
 TimeCircuits::TimeCircuits() 
-  : curDig(0), tDig(0), tBlink(0), tMin(0), blinkTick(false), jumpLock(false) {
+  : curDig(0), tDig(0), tBlink(0), tMin(0), blinkTick(false), jumpLock(false) 
+  #ifdef USE_RTC_DS3231
+    , lastRTCMinute(255) // 255 = неинициализировано
+  #endif
+{
   memset(buf, D_BLANK, sizeof(buf));
 }
 
@@ -127,7 +135,7 @@ void TimeCircuits::fillDash(byte from, byte count) {
 }
 
 /* ==================== DateTime to Buffer ==================== */
-void TimeCircuits::toBufferDest(const DateTime& dt) {
+void TimeCircuits::toBufferDest(const TCDateTime& dt) {
   if (!dt.valid) {
     fillDash(0, 13);
     return;
@@ -141,7 +149,7 @@ void TimeCircuits::toBufferDest(const DateTime& dt) {
   put2(11, dt.min);
 }
 
-void TimeCircuits::toBufferPres(const DateTime& dt) {
+void TimeCircuits::toBufferPres(const TCDateTime& dt) {
   if (!dt.valid) {
     fillDash(13, 13);
     return;
@@ -155,7 +163,7 @@ void TimeCircuits::toBufferPres(const DateTime& dt) {
   put2(24, dt.min);
 }
 
-void TimeCircuits::toBufferLast(const DateTime& dt) {
+void TimeCircuits::toBufferLast(const TCDateTime& dt) {
   if (!dt.valid) {
     fillDash(26, 13);
     return;
@@ -170,7 +178,7 @@ void TimeCircuits::toBufferLast(const DateTime& dt) {
 }
 
 /* ==================== LED Control ==================== */
-void TimeCircuits::setLeds(const DateTime& dt, int pinAM, int pinPM, int pinS1, int pinS2, bool blinkSecs) {
+void TimeCircuits::setLeds(const TCDateTime& dt, int pinAM, int pinPM, int pinS1, int pinS2, bool blinkSecs) {
   if (!dt.valid) {
     digitalWrite(pinAM, LOW);
     digitalWrite(pinPM, LOW);
@@ -193,7 +201,7 @@ void TimeCircuits::setLeds(const DateTime& dt, int pinAM, int pinPM, int pinS1, 
 }
 
 /* ==================== Time Increment with Full Date Logic ==================== */
-void TimeCircuits::incrementTime(DateTime& dt) {
+void TimeCircuits::incrementTime(TCDateTime& dt) {
   if (!dt.valid) return;
   
   // Увеличиваем минуты
@@ -255,6 +263,27 @@ int TimeCircuits::getDaysInMonth(int month, int year) {
 /* ==================== Present Time Update ==================== */
 void TimeCircuits::updatePresentTime() {
   if (!presT.valid) return;
+
+  #ifdef USE_RTC_DS3231
+    // ===== РЕЖИМ RTC: Используем ТОЛЬКО как таймер =====
+    if (rtc.begin()) {
+      DateTime rtcNow = rtc.now();
+      uint8_t currentMinute = rtcNow.minute();
+      
+      // Проверяем, изменилась ли минута с момента последней проверки
+      if (currentMinute != lastRTCMinute) {
+        lastRTCMinute = currentMinute;
+        
+        // Инкрементируем НАШУ дату (может быть любой год!)
+        incrementTime(presT);
+        refresh();
+        
+        // Serial.print(F("Present Time (RTC tick): "));
+        // Serial.println(presT.toText());
+      }
+      return;
+    }
+  #endif
   
   unsigned long ms = millis();
   
@@ -272,7 +301,7 @@ void TimeCircuits::updatePresentTime() {
 }
 
 /* ==================== Public Methods - Setters ==================== */
-void TimeCircuits::setDestTime(const DateTime& dt) {
+void TimeCircuits::setDestTime(const TCDateTime& dt) {
   destT = dt;
   refresh();
   Serial.print(F("Destination Time set: "));
@@ -280,26 +309,38 @@ void TimeCircuits::setDestTime(const DateTime& dt) {
 }
 
 void TimeCircuits::clearDestTime() {
-  destT = DateTime();
+  destT = TCDateTime();
   refresh();
   Serial.println(F("Destination Time cleared"));
 }
 
-void TimeCircuits::setPresTime(const DateTime& dt) {
+void TimeCircuits::setPresTime(const TCDateTime& dt) {
   presT = dt;
   tMin = millis();
+
+  #ifdef USE_RTC_DS3231
+    if (rtc.begin()) {
+      // Синхронизируем только ТЕКУЩУЮ минуту RTC для правильного отсчёта
+      rtc.adjust(DateTime(F("Jan 01 2020"), F("00:00:00")));
+      DateTime rtcNow = rtc.now();
+      lastRTCMinute = rtcNow.minute();
+      
+      Serial.println(F("RTC timer synchronized:"));
+    }
+  #endif
+
   refresh();
   Serial.print(F("Present Time set: "));
   Serial.println(dt.toText());
 }
 
 void TimeCircuits::clearPresTime() {
-  presT = DateTime();
+  presT = TCDateTime();
   refresh();
   Serial.println(F("Present Time cleared"));
 }
 
-void TimeCircuits::setLastTime(const DateTime& dt) {
+void TimeCircuits::setLastTime(const TCDateTime& dt) {
   lastT = dt;
   refresh();
   Serial.print(F("Last Time Departed set: "));
@@ -307,7 +348,7 @@ void TimeCircuits::setLastTime(const DateTime& dt) {
 }
 
 void TimeCircuits::clearLastTime() {
-  lastT = DateTime();
+  lastT = TCDateTime();
   refresh();
   Serial.println(F("Last Time Departed cleared"));
 }
@@ -319,9 +360,11 @@ void TimeCircuits::timeTravel() {
     return;
   }
   
-  lastT = presT;
-  presT = destT;
+  setLastTime(presT);
+  setPresTime(destT);
+
   tMin = millis();
+
   jumpLock = true;
   refresh();
   
@@ -356,9 +399,32 @@ void TimeCircuits::init() {
   for (byte i = 0; i < sizeof(ledPins); i++) {
     pinMode(ledPins[i], OUTPUT);
   }
+
+  #ifdef USE_RTC_DS3231
+    // Инициализация RTC модуля
+    if (!rtc.begin()) {
+      Serial.println(F("RTC DS3231 not found!"));
+      Serial.println(F("Falling back to millis() mode"));
+    } else {
+      Serial.println(F("RTC DS3231 initialized"));
+      
+      // Проверка потери питания
+      if (rtc.lostPower()) {
+        Serial.println(F("RTC lost power, setting default time"));
+        // Установить время компиляции как начальное (опционально)
+        // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+        rtc.adjust(DateTime(F("Oct 26 1985"), F("22:10:00")));
+      }
+
+      DateTime now = rtc.now();
+      lastRTCMinute = now.minute();
+    }
+  #else
+    Serial.println(F("Using millis() for timekeeping"));
+  #endif
   
   refresh();
-  Serial.println(F("⏰ Time Circuits Ready"));
+  Serial.println(F("Time Circuits Ready"));
 }
 
 /* ==================== Main Update Loop ==================== */

@@ -96,7 +96,7 @@ void handleDateInput(char key) {
       return;
     }
     
-    DateTime dt = parseDateTime(inDigits);
+    TCDateTime dt = parseDateTime(inDigits);
     if (!dt.valid) {
       Serial.println(F("\nError: Invalid date"));
       inputMode = MODE_NONE;

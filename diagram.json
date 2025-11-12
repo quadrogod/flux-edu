@@ -345,7 +345,8 @@
       "top": 751.4,
       "left": 239.4,
       "attrs": {}
-    }
+    },
+    { "type": "wokwi-ds1307", "id": "rtc1", "top": 650, "left": 1800, "attrs": {} }
   ],
   "connections": [
     [ "led13:A", "r13:1", "green", [ "v0" ] ],
@@ -608,7 +609,11 @@
     [ "r12:2", "mega:GND.1", "black", [ "v0" ] ],
     [ "ntc1:VCC", "mega:5V", "red", [ "v0" ] ],
     [ "ntc1:GND", "mega:GND.1", "black", [ "v0" ] ],
-    [ "ntc1:OUT", "mega:A0", "orange", [ "v0" ] ]
+    [ "ntc1:OUT", "mega:A0", "orange", [ "v0" ] ],
+    [ "rtc1:GND", "mega:GND.2", "black", [ "h0" ] ],
+    [ "rtc1:5V", "mega:5V", "red", [ "h0" ] ],
+    [ "rtc1:SDA", "mega:20", "blue", [ "h0" ] ],
+    [ "rtc1:SCL", "mega:21", "blue", [ "h0" ] ]
   ],
   "dependencies": {}
 }

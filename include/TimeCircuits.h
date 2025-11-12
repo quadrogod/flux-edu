@@ -3,13 +3,17 @@
 #define TIMECIRCUITS_H
 
 #include "Globals.h"
+// Поддержка RTC модуля
+#ifdef USE_RTC_DS3231
+  #include <RTClib.h>
+#endif
 
 class TimeCircuits {
 private:
   // Данные времени
-  DateTime destT;
-  DateTime presT;
-  DateTime lastT;
+  TCDateTime destT;
+  TCDateTime presT;
+  TCDateTime lastT;
   
   // Буфер дисплея
   byte buf[39];  // DIGITS_TOTAL = 39
@@ -19,6 +23,11 @@ private:
   unsigned long tMin;
   bool blinkTick;
   bool jumpLock;
+
+  #ifdef USE_RTC_DS3231
+    RTC_DS3231 rtc;  
+    uint8_t lastRTCMinute; // для отслеживания минут модуля
+  #endif
   
   // Внутренние методы
   void showDigit(byte idx);
@@ -27,12 +36,12 @@ private:
   void put4(byte off, int value);
   void putMonth(byte off, int month);
   void fillDash(byte from, byte count);
-  void toBufferDest(const DateTime& dt);
-  void toBufferPres(const DateTime& dt);
-  void toBufferLast(const DateTime& dt);
-  void setLeds(const DateTime& dt, int pinAM, int pinPM, int pinS1, int pinS2, bool blinkSecs);
+  void toBufferDest(const TCDateTime& dt);
+  void toBufferPres(const TCDateTime& dt);
+  void toBufferLast(const TCDateTime& dt);
+  void setLeds(const TCDateTime& dt, int pinAM, int pinPM, int pinS1, int pinS2, bool blinkSecs);
   void updatePresentTime();
-  void incrementTime(DateTime& dt);
+  void incrementTime(TCDateTime& dt);
   int getDaysInMonth(int month, int year);
 
 public:
@@ -43,27 +52,27 @@ public:
   void update();
   
   // Getters для Destination Time
-  DateTime getDestTime() const { return destT; }
+  TCDateTime getDestTime() const { return destT; }
   bool isDestValid() const { return destT.valid; }
   
   // Setters для Destination Time
-  void setDestTime(const DateTime& dt);
+  void setDestTime(const TCDateTime& dt);
   void clearDestTime();
   
   // Getters для Present Time
-  DateTime getPresTime() const { return presT; }
+  TCDateTime getPresTime() const { return presT; }
   bool isPresValid() const { return presT.valid; }
   
   // Setters для Present Time
-  void setPresTime(const DateTime& dt);
+  void setPresTime(const TCDateTime& dt);
   void clearPresTime();
   
   // Getters для Last Time
-  DateTime getLastTime() const { return lastT; }
+  TCDateTime getLastTime() const { return lastT; }
   bool isLastValid() const { return lastT.valid; }
   
   // Setters для Last Time
-  void setLastTime(const DateTime& dt);
+  void setLastTime(const TCDateTime& dt);
   void clearLastTime();
   
   // Управление прыжками во времени

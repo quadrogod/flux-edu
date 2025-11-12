@@ -28,12 +28,12 @@ extern unsigned long previousTime;
 #include <Arduino.h>
 
 // ==================== DateTime Structure ====================
-struct DateTime {
+struct TCDateTime {
   int m, d, y, h, min;
   bool valid;
-  
-  DateTime() { m=d=y=h=min=0; valid=false; }
-  
+
+  TCDateTime() { m=d=y=h=min=0; valid=false; }
+
   String toText() const {
     char buf[20];
     snprintf(buf, sizeof(buf), "%02d.%02d.%04d %02d:%02d", d, m, y, h, min);
@@ -44,5 +44,5 @@ struct DateTime {
 // ==================== Time Utilities ====================
 bool isLeapYear(int y);
 bool isDateValid(int M, int D, int Y, int h, int m);
-DateTime parseDateTime(const String& s);
+TCDateTime parseDateTime(const String& s);
 void convertTo12Hour(int h24, int& h12out, bool& pm);

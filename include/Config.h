@@ -8,6 +8,9 @@
 // SoftwareSerial mySoftwareSerial(10, 11); // RX, TX
 // DFRobotDFPlayerMini myDFPlayer;
 
+// ==================== RTC Configuration ====================
+#define USE_RTC_DS3231  // Закомментируйте эту строку, чтобы вернуться к millis() для отсчета Present Time
+
 // ----------------- IR -----------------
 #define IR_RECEIVE_PIN 10
 
