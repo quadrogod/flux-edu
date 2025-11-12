@@ -19,6 +19,7 @@ void setRadChase2();
 void setTimeTravel();
 void setMovieTimeTravel();
 void setRainbowChase();
+void setMovieTimeTravelSpeed();
 void setOff();
 
 void runSmoothChase();
@@ -32,3 +33,4 @@ void runTimeTravel();
 void runMovieTimeTravel();
 void runMovieTimeTravelReal();
 void runMovieTimeTravelReal2();
+void runMovieTimeTravelSpeed(); 

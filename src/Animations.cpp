@@ -3,6 +3,40 @@
 #include "Config.h"
 #include "Globals.h"
 #include "Animations.h"
+#include "TemperatureHandler.h"
+#include "TimeCircuits.h"
+
+// ==================== Easing Functions ====================
+// Ease-In Cubic: медленный старт, резкое ускорение в конце
+float easeInCubic(float t) {
+  return t * t * t;
+}
+
+// Ease-In-Out Cubic: S-образная кривая (опционально)
+float easeInOutCubic(float t) {
+  return t < 0.5 
+    ? 4 * t * t * t 
+    : 1 - pow(-2 * t + 2, 3) / 2;
+}
+
+// Ease-In Exponential: очень медленный старт, ОЧЕНЬ быстрый конец
+float easeInExpo(float t) {
+  return t == 0.0 ? 0.0 : pow(2, 10 * (t - 1));
+}
+
+// Custom: ваша специфичная кривая
+float customSpeedCurve(float t) {
+  // До 0.6 (60% диапазона = ~60°C): очень медленный рост
+  // После 0.6: резкое ускорение
+  if (t < 0.6) {
+    // Медленный рост: квадратичная функция
+    return 0.15 * (t / 0.6) * (t / 0.6); // 0.0 → 0.15
+  } else {
+    // Быстрый рост: кубическая функция
+    float normalizedT = (t - 0.6) / 0.4; // 0.0 → 1.0
+    return 0.15 + 0.85 * normalizedT * normalizedT * normalizedT; // 0.15 → 1.0
+  }
+}
 
 // Состояния для Movie Time Travel эффекта
 enum class TTState : uint8_t {
@@ -43,6 +77,7 @@ bool thirtyChase = false;
 bool radChase = false;
 bool radChase2 = false;
 bool rainbowChase = false;
+bool movieTimeTravelSpeed = false;
 
 // Таймеры для анимаций
 GTimer<millis> animTimer;
@@ -60,7 +95,7 @@ static uint8_t sparkBrightness = 0;    // Яркость искры для за�
 
 void resetModes() {
     timeTravel = smoothChase = movieChase = movieChaseSimple =
-    thirtyChase = radChase = radChase2 = rainbowChase = movieTimeTravel = false;
+    thirtyChase = radChase = radChase2 = rainbowChase = movieTimeTravel = movieTimeTravelSpeed = false;
     animStep = 0;
     animSubStep = 0;
     animTimer.stop();
@@ -133,6 +168,14 @@ void setMovieTimeTravel() {
     animTimer.start();
 }
 
+void setMovieTimeTravelSpeed() {
+    resetModes();
+    movieTimeTravelSpeed = true;
+    delaySpeed = 113;
+    animTimer.setTime(delaySpeed);
+    animTimer.start();
+}
+
 void setRainbowChase() {
     resetModes();
     rainbowChase = true;
@@ -156,6 +199,7 @@ void handleAnimations() {
     // else if (movieTimeTravel) runMovieTimeTravel();
     // else if (movieTimeTravel) runMovieTimeTravelReal();
     else if (movieTimeTravel) runMovieTimeTravelReal2();
+    else if (movieTimeTravelSpeed) runMovieTimeTravelSpeed();
     else if (rainbowChase) runRainbowChase();
 }
 
@@ -1490,3 +1534,239 @@ void runMovieTimeTravelReal2() {
             break;
     }
 }
+
+void runMovieTimeTravelSpeed() {
+  // Получаем прогресс температуры (0.0 - 1.0)
+  float tempProgress = getTempProgress();
+  
+  // ====================================================================
+  // ФАЗА 1: УСКОРЕНИЕ (управляется температурой)
+  // ====================================================================
+  if (ttState == TTState::RUNNING) {
+    // Вычисляем скорость на основе температуры
+    // При 28°C: delaySpeed = 113 (медленно)
+    // При ~60°C: delaySpeed = ~100 (всё ещё медленно)
+    // При 80°C: delaySpeed = 0.5 (очень быстро)
+
+    float baseSpeed = 113.0;
+    float minSpeed = 0.5;
+
+    // Применяем кастомную кривую ускорения
+    // float easedProgress = customSpeedCurve(tempProgress); // применяем функцию кривой Безье
+    float easedProgress = easeInCubic(tempProgress);
+
+    // Интерполяция скорости
+    delaySpeed = baseSpeed - (baseSpeed - minSpeed) * easedProgress;
+
+    if (delaySpeed < minSpeed) delaySpeed = minSpeed;
+
+    animTimer.setTime(delaySpeed);
+    
+    // Если таймер НЕ сработал - выходим
+    if (!animTimer.tick()) return;
+    
+    // Базовая анимация ускорения
+    FastLED.clear();
+    for (int j = 0; j <= 6; j++) {
+      if (animStep - j >= 0 && animStep - j < NUM_LEDS) {
+        leds[animStep - j] = CHSV(22, 200, 60 + j * 30);
+      }
+    }
+    
+    // ====================================================================
+    // ЭФФЕКТ ИСКР (зависит от температуры)
+    // ====================================================================
+    unsigned long now = millis();
+    
+    // Частота искр зависит от прогресса температуры
+    int sparkChance = (int)(easedProgress * 70); // 0-70% шанс
+    unsigned long sparkDelay = 100 - (unsigned long)(easedProgress * 80); // 100мс -> 20мс
+    
+    if (sparkDelay < 20) sparkDelay = 20;
+    
+    if (sparkPixel < 0) { // Искра НЕ активна
+      if (now - lastSparkTime > sparkDelay) {
+        if (random(100) < sparkChance) {
+          sparkPixel = random(NUM_LEDS);
+          sparkBrightness = 255;
+          lastSparkTime = now;
+        }
+      }
+    }
+    
+    // Отрисовка и затухание искры
+    if (sparkPixel >= 0 && sparkBrightness > 0) {
+      leds[sparkPixel] = CRGB(0, 50, sparkBrightness);
+      if (sparkBrightness >= 25) {
+        sparkBrightness -= 25;
+      } else {
+        sparkBrightness = 0;
+        sparkPixel = -1;
+      }
+    }
+    
+    FastLED.show();
+    
+    // ====================================================================
+    // ПЕРЕХОД К ВСПЫШКЕ (при достижении 80°C)
+    // ====================================================================
+    animStep++;
+    if (animStep >= NUM_LEDS) {
+      animStep = 0;
+      
+      // Проверяем: достигли ли порога температуры?
+      if (tempProgress >= 1.0) { // 80°C достигнуто!
+        ttState = TTState::FLASH_START;
+        ttTimer.start(50);
+        animTimer.stop();
+        
+        // Сброс переменных искр
+        sparkCounter = 0;
+        sparkPixel = -1;
+        sparkBrightness = 0;
+        
+        // ВАЖНО: Вызов timeTravel()
+        timeCircuits.timeTravel();
+        
+        Serial.println(F("⚡⚡⚡ 80°C REACHED - TIME JUMP! ⚡⚡⚡"));
+        return;
+      }
+    }
+    return;
+  }
+  
+  // ====================================================================
+  // ФАЗА 2-N: ФИНАЛЬНАЯ ПОСЛЕДОВАТЕЛЬНОСТЬ (как в Real2)
+  // ====================================================================
+  
+  // Плавное затухание синего
+  if (ttState == TTState::FLASH_FADE) {
+    unsigned long elapsed = millis() - fadeStartTime;
+    const unsigned long fadeDuration = 500;
+    if (elapsed < fadeDuration) {
+      uint8_t brightness = map(elapsed, 0, fadeDuration, 255, 180);
+      FastLED.setBrightness(brightness);
+      FastLED.show();
+      return;
+    } else {
+      ttState = TTState::DARK_1;
+      fadeStartTime = millis();
+      return;
+    }
+  }
+  
+  // Темнота с затуханием
+  if (ttState == TTState::DARK_1) {
+    unsigned long elapsed = millis() - fadeStartTime;
+    const unsigned long fadeDuration = 200;
+    if (elapsed < fadeDuration) {
+      uint8_t brightness = map(elapsed, 0, fadeDuration, 180, 0);
+      FastLED.setBrightness(brightness);
+      FastLED.show();
+      return;
+    } else {
+      digitalWrite(SINGLE_LED_PIN, LOW);
+      FastLED.clear();
+      FastLED.setBrightness(255);
+      FastLED.show();
+      ttState = TTState::BURST_1;
+      ttTimer.start(150);
+      return;
+    }
+  }
+  
+  // Финальное затухание белого
+  if (ttState == TTState::FADE_OUT) {
+    unsigned long elapsed = millis() - fadeStartTime;
+    const unsigned long fadeDuration = 600;
+    if (elapsed < fadeDuration) {
+      uint8_t brightness = map(elapsed, 0, fadeDuration, 255, 0);
+      FastLED.setBrightness(brightness);
+      FastLED.show();
+      return;
+    } else {
+      digitalWrite(SINGLE_LED_PIN, LOW);
+      FastLED.clear();
+      FastLED.setBrightness(255);
+      FastLED.show();
+      ttState = TTState::COMPLETE;
+      ttTimer.start(400);
+      return;
+    }
+  }
+  
+  // Остальные состояния (взрывы)
+  if (!ttTimer.tick()) return;
+  
+  switch (ttState) {
+    case TTState::FLASH_START:
+      digitalWrite(SINGLE_LED_PIN, HIGH);
+      fill_solid(leds, NUM_LEDS, CRGB::Blue);
+      FastLED.setBrightness(255);
+      FastLED.show();
+      ttState = TTState::FLASH_HOLD;
+      ttTimer.start(1800);
+      break;
+      
+    case TTState::FLASH_HOLD:
+      ttState = TTState::FLASH_FADE;
+      fadeStartTime = millis();
+      break;
+      
+    case TTState::BURST_1:
+      digitalWrite(SINGLE_LED_PIN, HIGH);
+      fill_solid(leds, NUM_LEDS, CRGB(150, 180, 255));
+      FastLED.setBrightness(255);
+      FastLED.show();
+      ttState = TTState::DARK_2;
+      ttTimer.start(180);
+      break;
+      
+    case TTState::DARK_2:
+      digitalWrite(SINGLE_LED_PIN, LOW);
+      FastLED.clear();
+      FastLED.show();
+      ttState = TTState::BURST_2;
+      ttTimer.start(250);
+      break;
+      
+    case TTState::BURST_2:
+      digitalWrite(SINGLE_LED_PIN, HIGH);
+      fill_solid(leds, NUM_LEDS, CRGB(180, 200, 255));
+      FastLED.setBrightness(255);
+      FastLED.show();
+      ttState = TTState::DARK_3;
+      ttTimer.start(220);
+      break;
+      
+    case TTState::DARK_3:
+      digitalWrite(SINGLE_LED_PIN, LOW);
+      FastLED.clear();
+      FastLED.show();
+      ttState = TTState::BURST_3;
+      ttTimer.start(180);
+      break;
+      
+    case TTState::BURST_3:
+      digitalWrite(SINGLE_LED_PIN, HIGH);
+      fill_solid(leds, NUM_LEDS, CRGB::White);
+      FastLED.setBrightness(255);
+      FastLED.show();
+      ttState = TTState::FADE_OUT;
+      fadeStartTime = millis();
+      break;
+      
+    case TTState::COMPLETE:
+      FastLED.setBrightness(255);
+      delaySpeed = 80;
+      movieSpeed = 66.66;
+      ttState = TTState::RUNNING;
+      speedAnimationActive = false; // Сброс флага
+      setRadChase2();
+      break;
+      
+    default:
+      break;
+  }
+}
+

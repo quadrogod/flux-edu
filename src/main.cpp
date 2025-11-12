@@ -56,6 +56,6 @@ void loop() {
     handleKey();
     handleSerial();
     handleAnimations();
-    handleTemperatureSensor();
+    handleTemperatureSpeed();
     timeCircuits.update(); 
 }
